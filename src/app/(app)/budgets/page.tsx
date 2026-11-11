@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react'
 import { useCategories, useMonthlyExpenses, useBudgets } from '@/lib/hooks'
 import { formatCurrency, getMonthLabel } from '@/lib/utils'
-import { saveDemoBudgets } from '@/lib/demo-storage'
 import { supabase } from '@/lib/supabase'
 
 export default function BudgetsPage() {
@@ -33,29 +32,8 @@ export default function BudgetsPage() {
 
   async function saveBudgets() {
     setSaving(true)
-    let user = null
-    try {
-      const { data } = await supabase.auth.getUser()
-      user = data.user
-    } catch {
-      // Demo mode
-    }
-
-    if (!user) {
-      const demoUpserts = Object.entries(budgetInputs)
-        .filter(([_, v]) => v && parseFloat(v) > 0)
-        .map(([categoryId, amount]) => ({
-          category_id: categoryId === 'overall' ? null : categoryId,
-          amount: parseFloat(amount),
-          month: monthDate,
-        }))
-      saveDemoBudgets(demoUpserts)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-      setSaving(false)
-      setBudgetInputs({})
-      return
-    }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setSaving(false); return }
 
     const upserts = Object.entries(budgetInputs)
       .filter(([_, v]) => v && parseFloat(v) > 0)

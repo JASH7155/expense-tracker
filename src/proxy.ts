@@ -29,11 +29,27 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Refresh auth token if present
+  let user = null
   try {
-    await supabase.auth.getUser()
+    const { data } = await supabase.auth.getUser()
+    user = data.user
   } catch {
-    // Ignore in demo / offline mode
+    user = null
+  }
+
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
+  const isRoot = request.nextUrl.pathname === '/'
+
+  if (!user && !isAuthPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth'
+    return NextResponse.redirect(url)
+  }
+
+  if (user && (isAuthPage || isRoot)) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse

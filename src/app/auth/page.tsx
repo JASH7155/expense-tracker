@@ -86,26 +86,6 @@ export default function AuthPage() {
 
         {/* Auth Card */}
         <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8">
-          {/* Quick Demo Bypass */}
-          <div className="mb-6">
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard')}
-              className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-medium py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
-            >
-              <span>🚀</span>
-              <span>Skip Login &amp; Use Predefined User</span>
-            </button>
-            <div className="relative my-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#30363d]" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#161b22] px-3 text-gray-500">Or sign in with Supabase</span>
-              </div>
-            </div>
-          </div>
-
           {/* Method Selector */}
           <div className="grid grid-cols-2 bg-[#0d1117] p-1 rounded-xl mb-6 border border-[#30363d]">
             <button

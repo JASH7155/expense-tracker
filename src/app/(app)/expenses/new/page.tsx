@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase'
 import { useCategories } from '@/lib/hooks'
 import { categorizeExpense } from '@/lib/categorize'
 import { PAYMENT_METHODS } from '@/lib/utils'
-import { addDemoExpense } from '@/lib/demo-storage'
 import { Category } from '@/types/database'
 
 export default function NewExpensePage() {
@@ -43,34 +42,17 @@ export default function NewExpensePage() {
     setLoading(true)
     setError('')
 
-    let user = null
-    try {
-      const { data } = await supabase.auth.getUser()
-      user = data.user
-    } catch {
-      // Demo mode
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setError('You must be signed in to add an expense.')
+      setLoading(false)
+      return
     }
 
     const tags = form.tags
       .split(',')
       .map(t => t.trim().replace(/^#/, ''))
       .filter(Boolean)
-
-    if (!user) {
-      addDemoExpense({
-        amount: parseFloat(form.amount),
-        description: form.description,
-        category_id: form.category_id || null,
-        date: form.date,
-        payment_method: form.payment_method,
-        tags,
-        is_recurring: form.is_recurring,
-        notes: form.notes || null,
-        categories: null,
-      })
-      router.push('/expenses')
-      return
-    }
 
     const { error: insertError } = await supabase.from('expenses').insert({
       user_id: user.id,

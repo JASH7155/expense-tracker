@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/lib/hooks'
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: '📊', label: 'Dashboard' },
@@ -18,22 +17,43 @@ const NAV_ITEMS = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, isDemo, loading } = useAuth()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  async function handleSignOut() {
-    try {
-      await supabase.auth.signOut()
-    } catch {
-      // Ignore
+  useEffect(() => {
+    async function checkUser() {
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) {
+        router.push('/auth')
+      } else {
+        setUser(currentUser)
+      }
+      setLoading(false)
     }
+
+    checkUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      if (!session?.user) {
+        router.push('/auth')
+      } else {
+        setUser(session.user)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router])
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
     router.push('/auth')
   }
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0d1117]">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-gray-400">Loading your account...</div>
       </div>
     )
   }
@@ -50,12 +70,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <p className="text-xs text-gray-500">Personal Finance</p>
             </div>
           </div>
-          {isDemo && (
-            <div className="mt-3 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-md flex items-center justify-between text-xs text-amber-400">
-              <span>👤 Demo Mode Active</span>
-              <Link href="/auth" className="underline hover:text-amber-300">Login</Link>
-            </div>
-          )}
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -78,18 +92,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-[#30363d]">
           <div className="flex items-center gap-3 mb-3 px-2">
             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
-              {user?.email?.[0]?.toUpperCase() || 'D'}
+              {user.email?.[0]?.toUpperCase() || 'U'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white truncate">{user?.email || 'demo@expenseiq.local'}</p>
-              <p className="text-xs text-gray-500">{isDemo ? 'Predefined User' : 'Authenticated'}</p>
+              <p className="text-sm text-white truncate">{user.email}</p>
+              <p className="text-xs text-gray-500">Authenticated</p>
             </div>
           </div>
           <button
             onClick={handleSignOut}
             className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
           >
-            {isDemo ? '🔐 Switch to Login' : '🚪 Sign Out'}
+            🚪 Sign Out
           </button>
         </div>
       </aside>
@@ -99,11 +113,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2">
           <span className="text-xl">📊</span>
           <span className="text-white font-bold">ExpenseIQ</span>
-          {isDemo && (
-            <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">
-              Demo
-            </span>
-          )}
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -139,7 +148,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 onClick={handleSignOut}
                 className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:text-red-400 rounded-lg"
               >
-                {isDemo ? '🔐 Switch to Login' : '🚪 Sign Out'}
+                🚪 Sign Out
               </button>
             </div>
           </div>

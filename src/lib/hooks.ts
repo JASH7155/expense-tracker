@@ -3,13 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 import { Category, Expense, Budget, ExpenseWithCategory } from '@/types/database'
-import { getCurrentMonthRange } from './utils'
-import {
-  DEMO_USER,
-  getDemoCategories,
-  getDemoExpenses,
-  getDemoBudgets,
-} from './demo-storage'
+import { getCurrentMonthRange, DEFAULT_CATEGORIES } from './utils'
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -17,26 +11,33 @@ export function useCategories() {
 
   useEffect(() => {
     async function fetchCategories() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data, error } = await supabase
-            .from('categories')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('name')
-
-          if (!error && data && data.length > 0) {
-            setCategories(data)
-            setLoading(false)
-            return
-          }
-        }
-      } catch {
-        // Fall back to demo categories
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setLoading(false)
+        return
       }
 
-      setCategories(getDemoCategories())
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name')
+
+      if (!error && data && data.length > 0) {
+        setCategories(data)
+      } else {
+        // Fallback: If DB trigger hasn't populated categories yet, seed client-side
+        const seeded = DEFAULT_CATEGORIES.map((c, i) => ({
+          id: `default-cat-${i + 1}`,
+          user_id: user.id,
+          name: c.name,
+          icon: c.icon,
+          color: c.color,
+          is_default: true,
+          created_at: new Date().toISOString(),
+        }))
+        setCategories(seeded)
+      }
       setLoading(false)
     }
 
@@ -58,34 +59,30 @@ export function useExpenses(filters?: {
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        let query = supabase
-          .from('expenses')
-          .select('*, categories(*)')
-          .eq('user_id', user.id)
-          .order('date', { ascending: false })
-          .order('created_at', { ascending: false })
-
-        if (filters?.startDate) query = query.gte('date', filters.startDate)
-        if (filters?.endDate) query = query.lte('date', filters.endDate)
-        if (filters?.categoryId) query = query.eq('category_id', filters.categoryId)
-        if (filters?.paymentMethod) query = query.eq('payment_method', filters.paymentMethod)
-        if (filters?.search) query = query.ilike('description', `%${filters.search}%`)
-
-        const { data, error } = await query
-        if (!error && data) {
-          setExpenses(data as unknown as ExpenseWithCategory[])
-          setLoading(false)
-          return
-        }
-      }
-    } catch {
-      // Fall back to demo data
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setExpenses([])
+      setLoading(false)
+      return
     }
 
-    setExpenses(getDemoExpenses(filters))
+    let query = supabase
+      .from('expenses')
+      .select('*, categories(*)')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+
+    if (filters?.startDate) query = query.gte('date', filters.startDate)
+    if (filters?.endDate) query = query.lte('date', filters.endDate)
+    if (filters?.categoryId) query = query.eq('category_id', filters.categoryId)
+    if (filters?.paymentMethod) query = query.eq('payment_method', filters.paymentMethod)
+    if (filters?.search) query = query.ilike('description', `%${filters.search}%`)
+
+    const { data, error } = await query
+    if (!error && data) {
+      setExpenses(data as unknown as ExpenseWithCategory[])
+    }
     setLoading(false)
   }, [filters?.startDate, filters?.endDate, filters?.categoryId, filters?.paymentMethod, filters?.search])
 
@@ -107,29 +104,25 @@ export function useBudgets() {
 
   const fetchBudgets = useCallback(async () => {
     setLoading(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const now = new Date()
-        const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-
-        const { data, error } = await supabase
-          .from('budgets')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('month', month)
-
-        if (!error && data && data.length > 0) {
-          setBudgets(data)
-          setLoading(false)
-          return
-        }
-      }
-    } catch {
-      // Fall back to demo budgets
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setBudgets([])
+      setLoading(false)
+      return
     }
 
-    setBudgets(getDemoBudgets())
+    const now = new Date()
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('month', month)
+
+    if (!error && data) {
+      setBudgets(data)
+    }
     setLoading(false)
   }, [])
 
@@ -141,42 +134,21 @@ export function useBudgets() {
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<any>(DEMO_USER)
-  const [isDemo, setIsDemo] = useState(true)
-  const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const { data: { user: sbUser } } = await supabase.auth.getUser()
-        if (sbUser) {
-          setUser(sbUser)
-          setIsDemo(false)
-        } else {
-          setUser(DEMO_USER)
-          setIsDemo(true)
-        }
-      } catch {
-        setUser(DEMO_USER)
-        setIsDemo(true)
-      }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
       setLoading(false)
-    }
-
-    checkAuth()
+    })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (session?.user) {
-        setUser(session.user)
-        setIsDemo(false)
-      } else {
-        setUser(DEMO_USER)
-        setIsDemo(true)
-      }
+      setUser(session?.user ?? null)
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  return { user, isDemo, loading }
+  return { user, loading }
 }

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks'
-import { getDemoExpenses, resetDemoData } from '@/lib/demo-storage'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -15,27 +14,14 @@ export default function SettingsPage() {
 
   async function handleExportAll() {
     setExporting(true)
-    let rawData: any[] = []
+    const { data } = await supabase
+      .from('expenses')
+      .select('*, categories(name, icon)')
+      .order('date', { ascending: false })
 
-    try {
-      const { data } = await supabase
-        .from('expenses')
-        .select('*, categories(name, icon)')
-        .order('date', { ascending: false })
-      if (data && data.length > 0) {
-        rawData = data
-      }
-    } catch {
-      // Demo fallback
-    }
-
-    if (rawData.length === 0) {
-      rawData = getDemoExpenses()
-    }
-
-    if (rawData.length > 0) {
+    if (data && data.length > 0) {
       const headers = ['Date', 'Description', 'Amount', 'Category', 'Payment Method', 'Tags', 'Notes', 'Recurring']
-      const rows = rawData.map(e => [
+      const rows = data.map(e => [
         e.date,
         `"${e.description.replace(/"/g, '""')}"`,
         e.amount,
@@ -60,27 +46,14 @@ export default function SettingsPage() {
   async function handleDeleteAll() {
     if (deleteConfirm !== 'DELETE') return
     setDeleteLoading(true)
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        await supabase.from('expenses').delete().eq('user_id', authUser.id)
-      }
-    } catch {
-      // Demo fallback
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (authUser) {
+      await supabase.from('expenses').delete().eq('user_id', authUser.id)
     }
-    window.localStorage.setItem('expenseiq_demo_expenses', '[]')
     setDeleteConfirm('')
     setDeleteLoading(false)
     alert('✅ All expenses deleted successfully.')
     window.location.reload()
-  }
-
-  function handleResetDemo() {
-    if (confirm('Reset to initial sample expenses and budgets?')) {
-      resetDemoData()
-      alert('Sample data restored!')
-      window.location.reload()
-    }
   }
 
   async function handleSignOut() {
@@ -100,11 +73,11 @@ export default function SettingsPage() {
         <h2 className="text-white font-semibold mb-4">Account</h2>
         <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-            {user?.email?.[0]?.toUpperCase() || '?'}
+            {user?.email?.[0]?.toUpperCase() || 'U'}
           </div>
           <div>
-            <p className="text-white font-medium">{user?.email}</p>
-            <p className="text-gray-500 text-sm">Signed in via Magic Link</p>
+            <p className="text-white font-medium">{user?.email || 'Loading...'}</p>
+            <p className="text-gray-500 text-sm">Signed in with Supabase</p>
           </div>
         </div>
         <button
@@ -124,7 +97,7 @@ export default function SettingsPage() {
             ['Currency', '₹ INR'],
             ['Database', 'Supabase (PostgreSQL)'],
             ['Hosting', 'Vercel (Free Tier)'],
-            ['Auth', 'Magic Link (Passwordless)'],
+            ['Auth', 'Supabase Auth (Password & Magic Link)'],
           ].map(([label, value]) => (
             <div key={label} className="flex justify-between py-2 first:pt-0 last:pb-0">
               <span className="text-gray-400">{label}</span>
@@ -150,20 +123,6 @@ export default function SettingsPage() {
             className="bg-green-600/20 hover:bg-green-600/30 border border-green-600/40 text-green-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {exporting ? 'Exporting...' : '📥 Export All as CSV'}
-          </button>
-        </div>
-
-        {/* Reset Sample Data */}
-        <div className="border-t border-[#30363d] py-4 flex flex-wrap gap-3 items-center justify-between">
-          <div>
-            <p className="text-gray-300 text-sm font-medium mb-1">Sample Data</p>
-            <p className="text-gray-500 text-xs">Restore pre-populated sample expenses and budgets</p>
-          </div>
-          <button
-            onClick={handleResetDemo}
-            className="bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/40 text-blue-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            🔄 Restore Sample Data
           </button>
         </div>
 

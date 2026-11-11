@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useExpenses, useCategories } from '@/lib/hooks'
 import { formatCurrency, formatDate, PAYMENT_METHODS } from '@/lib/utils'
-import { deleteDemoExpense } from '@/lib/demo-storage'
 import { supabase } from '@/lib/supabase'
 
 export default function ExpensesPage() {
@@ -29,16 +28,7 @@ export default function ExpensesPage() {
   async function handleDelete(id: string) {
     if (!confirm('Delete this expense?')) return
     setDeleting(id)
-    try {
-      const { data } = await supabase.auth.getUser()
-      if (data?.user) {
-        await supabase.from('expenses').delete().eq('id', id)
-      } else {
-        deleteDemoExpense(id)
-      }
-    } catch {
-      deleteDemoExpense(id)
-    }
+    await supabase.from('expenses').delete().eq('id', id)
     await refetch()
     setDeleting(null)
   }
