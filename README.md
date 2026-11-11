@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ExpenseIQ — Personal Expense Tracker
 
-## Getting Started
+A full-stack personal expense tracker built with Next.js 14, Supabase, and deployed on Vercel.
 
-First, run the development server:
+## 🚀 Features
+
+- 💸 **Quick expense entry** with auto-categorization
+- 📊 **Dashboard** with charts (donut, line, bar)
+- 🎯 **Budget tracking** — overall and per-category
+- ✨ **Smart insights** — spending patterns and suggestions
+- 📄 **Reports** with CSV export
+- 🔒 **Secure auth** via Supabase Magic Link
+- 🌙 **Dark mode** by default
+- 📱 **Mobile-responsive** design
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 14 (App Router) + TypeScript
+- **Styling**: Tailwind CSS
+- **Charts**: Recharts
+- **Backend**: Next.js API Routes (serverless)
+- **Database**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth (Magic Link)
+- **Deployment**: Vercel
+
+## 📦 Getting Started
+
+### 1. Clone & Install
+
+```bash
+git clone <your-repo>
+cd expense-tracker
+npm install
+```
+
+### 2. Set up Supabase
+
+1. Go to [supabase.com](https://supabase.com) and create a free account
+2. Create a new project
+3. Go to **SQL Editor** and run the contents of `supabase/schema.sql`
+4. Go to **Settings → API** and copy your Project URL and anon key
+
+### 3. Configure Environment Variables
+
+Copy `.env.local` and fill in your Supabase credentials:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+### 4. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🌐 Deploy to Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com) and import your repository
+3. Add your environment variables in Vercel dashboard
+4. Click **Deploy** — done! 🎉
 
-## Learn More
+## 📁 Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── auth/           # Login page
+│   ├── (app)/          # Protected app pages
+│   │   ├── dashboard/  # Main dashboard
+│   │   ├── expenses/   # Expense list + add form
+│   │   ├── budgets/    # Budget management
+│   │   ├── insights/   # AI-powered insights
+│   │   ├── reports/    # Reports + CSV export
+│   │   └── settings/   # Account settings
+│   └── layout.tsx
+├── lib/
+│   ├── supabase.ts     # Supabase client
+│   ├── hooks.ts        # React data hooks
+│   ├── categorize.ts   # Auto-categorization
+│   └── utils.ts        # Utility functions
+├── types/
+│   └── database.ts     # TypeScript DB types
+└── middleware.ts       # Auth middleware
+supabase/
+└── schema.sql          # Database schema + RLS
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔒 Security
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Row Level Security (RLS) enabled on all tables
+- Each user can only access their own data
+- Magic Link auth — no passwords stored
