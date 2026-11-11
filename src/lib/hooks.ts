@@ -1,9 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 import { Category, Expense, Budget, ExpenseWithCategory } from '@/types/database'
 import { getCurrentMonthRange } from './utils'
+import {
+  DEMO_USER,
+  getDemoCategories,
+  getDemoExpenses,
+  getDemoBudgets,
+} from './demo-storage'
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -11,18 +17,29 @@ export function useCategories() {
 
   useEffect(() => {
     async function fetchCategories() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data, error } = await supabase
+            .from('categories')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('name')
 
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name')
+          if (!error && data && data.length > 0) {
+            setCategories(data)
+            setLoading(false)
+            return
+          }
+        }
+      } catch {
+        // Fall back to demo categories
+      }
 
-      if (!error && data) setCategories(data)
+      setCategories(getDemoCategories())
       setLoading(false)
     }
+
     fetchCategories()
   }, [])
 
@@ -39,51 +56,44 @@ export function useExpenses(filters?: {
   const [expenses, setExpenses] = useState<ExpenseWithCategory[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchExpenses() {
+  const fetchExpenses = useCallback(async () => {
+    setLoading(true)
+    try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (user) {
+        let query = supabase
+          .from('expenses')
+          .select('*, categories(*)')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false })
 
-      let query = supabase
-        .from('expenses')
-        .select('*, categories(*)')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
+        if (filters?.startDate) query = query.gte('date', filters.startDate)
+        if (filters?.endDate) query = query.lte('date', filters.endDate)
+        if (filters?.categoryId) query = query.eq('category_id', filters.categoryId)
+        if (filters?.paymentMethod) query = query.eq('payment_method', filters.paymentMethod)
+        if (filters?.search) query = query.ilike('description', `%${filters.search}%`)
 
-      if (filters?.startDate) query = query.gte('date', filters.startDate)
-      if (filters?.endDate) query = query.lte('date', filters.endDate)
-      if (filters?.categoryId) query = query.eq('category_id', filters.categoryId)
-      if (filters?.paymentMethod) query = query.eq('payment_method', filters.paymentMethod)
-      if (filters?.search) query = query.ilike('description', `%${filters.search}%`)
-
-      const { data, error } = await query
-      if (!error && data) setExpenses(data as unknown as ExpenseWithCategory[])
-      setLoading(false)
+        const { data, error } = await query
+        if (!error && data) {
+          setExpenses(data as unknown as ExpenseWithCategory[])
+          setLoading(false)
+          return
+        }
+      }
+    } catch {
+      // Fall back to demo data
     }
-    fetchExpenses()
+
+    setExpenses(getDemoExpenses(filters))
+    setLoading(false)
   }, [filters?.startDate, filters?.endDate, filters?.categoryId, filters?.paymentMethod, filters?.search])
 
-  const refetch = async () => {
-    setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  useEffect(() => {
+    fetchExpenses()
+  }, [fetchExpenses])
 
-    let query = supabase
-      .from('expenses')
-      .select('*, categories(*)')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
-
-    if (filters?.startDate) query = query.gte('date', filters.startDate)
-    if (filters?.endDate) query = query.lte('date', filters.endDate)
-
-    const { data, error } = await query
-    if (!error && data) setExpenses(data as unknown as ExpenseWithCategory[])
-    setLoading(false)
-  }
-
-  return { expenses, loading, refetch }
+  return { expenses, loading, refetch: fetchExpenses }
 }
 
 export function useMonthlyExpenses() {
@@ -95,45 +105,78 @@ export function useBudgets() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchBudgets() {
+  const fetchBudgets = useCallback(async () => {
+    setLoading(true)
+    try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (user) {
+        const now = new Date()
+        const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
-      const now = new Date()
-      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+        const { data, error } = await supabase
+          .from('budgets')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('month', month)
 
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('month', month)
-
-      if (!error && data) setBudgets(data)
-      setLoading(false)
+        if (!error && data && data.length > 0) {
+          setBudgets(data)
+          setLoading(false)
+          return
+        }
+      }
+    } catch {
+      // Fall back to demo budgets
     }
-    fetchBudgets()
+
+    setBudgets(getDemoBudgets())
+    setLoading(false)
   }, [])
 
-  return { budgets, loading }
+  useEffect(() => {
+    fetchBudgets()
+  }, [fetchBudgets])
+
+  return { budgets, loading, refetch: fetchBudgets }
 }
 
 export function useAuth() {
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(DEMO_USER)
+  const [isDemo, setIsDemo] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
+    async function checkAuth() {
+      try {
+        const { data: { user: sbUser } } = await supabase.auth.getUser()
+        if (sbUser) {
+          setUser(sbUser)
+          setIsDemo(false)
+        } else {
+          setUser(DEMO_USER)
+          setIsDemo(true)
+        }
+      } catch {
+        setUser(DEMO_USER)
+        setIsDemo(true)
+      }
       setLoading(false)
-    })
+    }
+
+    checkAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null)
+      if (session?.user) {
+        setUser(session.user)
+        setIsDemo(false)
+      } else {
+        setUser(DEMO_USER)
+        setIsDemo(true)
+      }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  return { user, loading }
+  return { user, isDemo, loading }
 }

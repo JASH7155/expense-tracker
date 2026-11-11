@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { useCategories } from '@/lib/hooks'
 import { categorizeExpense } from '@/lib/categorize'
 import { PAYMENT_METHODS } from '@/lib/utils'
+import { getDemoExpenses, updateDemoExpense } from '@/lib/demo-storage'
 import { Category, ExpenseWithCategory } from '@/types/database'
 
 export default function EditExpensePage() {
@@ -32,29 +33,49 @@ export default function EditExpensePage() {
 
   useEffect(() => {
     async function fetchExpense() {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*, categories(*)')
-        .eq('id', id)
-        .single()
+      try {
+        const { data, error } = await supabase
+          .from('expenses')
+          .select('*, categories(*)')
+          .eq('id', id)
+          .single()
 
-      if (error || !data) {
-        setError('Expense not found')
-        setFetching(false)
-        return
+        if (!error && data) {
+          const exp = data as unknown as ExpenseWithCategory
+          setForm({
+            amount: String(exp.amount),
+            description: exp.description,
+            category_id: exp.category_id || '',
+            date: exp.date,
+            payment_method: exp.payment_method,
+            tags: (exp.tags || []).join(', '),
+            is_recurring: exp.is_recurring,
+            notes: exp.notes || '',
+          })
+          setFetching(false)
+          return
+        }
+      } catch {
+        // Fall back to demo
       }
 
-      const exp = data as unknown as ExpenseWithCategory
-      setForm({
-        amount: String(exp.amount),
-        description: exp.description,
-        category_id: exp.category_id || '',
-        date: exp.date,
-        payment_method: exp.payment_method,
-        tags: (exp.tags || []).join(', '),
-        is_recurring: exp.is_recurring,
-        notes: exp.notes || '',
-      })
+      // Check demo storage
+      const demoList = getDemoExpenses()
+      const found = demoList.find(e => e.id === id)
+      if (found) {
+        setForm({
+          amount: String(found.amount),
+          description: found.description,
+          category_id: found.category_id || '',
+          date: found.date,
+          payment_method: found.payment_method,
+          tags: (found.tags || []).join(', '),
+          is_recurring: found.is_recurring,
+          notes: found.notes || '',
+        })
+      } else {
+        setError('Expense not found')
+      }
       setFetching(false)
     }
     fetchExpense()
@@ -69,6 +90,29 @@ export default function EditExpensePage() {
       .split(',')
       .map(t => t.trim().replace(/^#/, ''))
       .filter(Boolean)
+
+    let user = null
+    try {
+      const { data } = await supabase.auth.getUser()
+      user = data.user
+    } catch {
+      // Demo mode
+    }
+
+    if (!user) {
+      updateDemoExpense(id, {
+        amount: parseFloat(form.amount),
+        description: form.description,
+        category_id: form.category_id || null,
+        date: form.date,
+        payment_method: form.payment_method,
+        tags,
+        is_recurring: form.is_recurring,
+        notes: form.notes || null,
+      })
+      router.push('/expenses')
+      return
+    }
 
     const { error: updateError } = await supabase
       .from('expenses')
