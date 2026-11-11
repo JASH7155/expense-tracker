@@ -21,37 +21,43 @@ export default function AuthPage() {
     setError('')
     setMessage('')
 
-    if (isSignUp) {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
-      })
+    try {
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        })
 
-      if (error) {
-        setError(error.message)
-      } else if (data.session) {
-        // User logged in immediately (email confirmation disabled in Supabase)
-        router.push('/dashboard')
+        if (error) {
+          setError(error.message)
+        } else if (data.session) {
+          window.location.href = '/dashboard'
+        } else {
+          setMessage('Account created! Please check your email inbox to confirm your account, then sign in.')
+          setIsSignUp(false)
+        }
       } else {
-        setMessage('Account created! You can now sign in below.')
-        setIsSignUp(false)
-      }
-    } else {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
 
-      if (error) {
-        setError(error.message)
-      } else if (data.session) {
-        router.push('/dashboard')
+        if (error) {
+          setError(error.message)
+        } else if (data.session) {
+          window.location.href = '/dashboard'
+        } else {
+          setError('Email not confirmed. Please check your inbox and click the confirmation link.')
+        }
       }
+    } catch (err: any) {
+      setError(err?.message || 'Authentication failed. Please check your network or credentials.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function handleMagicLink(e: React.FormEvent) {
@@ -59,19 +65,24 @@ export default function AuthPage() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      },
-    })
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      setMagicSent(true)
+      if (error) {
+        setError(error.message)
+      } else {
+        setMagicSent(true)
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send magic link.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -97,7 +108,7 @@ export default function AuthPage() {
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              Password (Instant)
+              Password
             </button>
             <button
               type="button"
@@ -131,8 +142,8 @@ export default function AuthPage() {
               </h2>
               <p className="text-gray-400 text-sm mb-6">
                 {isSignUp
-                  ? 'Enter an email and password to get started immediately.'
-                  : 'Welcome back! Enter your credentials to access your dashboard.'}
+                  ? 'Enter an email and password to create a new account.'
+                  : 'Welcome back! Enter your email and password to continue.'}
               </p>
 
               <div className="space-y-4 mb-6">
