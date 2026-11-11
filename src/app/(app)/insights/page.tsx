@@ -74,30 +74,58 @@ export default function InsightsPage() {
       })
     }
 
-    // Food delivery check
-    const foodDeliveryExpenses = expenses.filter(e =>
-      e.description.toLowerCase().includes('swiggy') ||
-      e.description.toLowerCase().includes('zomato')
-    )
-    if (foodDeliveryExpenses.length >= 4) {
-      const totalFoodDelivery = foodDeliveryExpenses.reduce((s, e) => s + e.amount, 0)
+    // Living with Parents financial superpower insight
+    const rentOrBills = expenses.filter(e => {
+      const name = (e.categories?.name || '').toLowerCase()
+      const desc = e.description.toLowerCase()
+      return desc.includes('rent') || desc.includes('electricity') || desc.includes('eb bill') || desc.includes('water bill') || name.includes('rent')
+    })
+    const savingsExp = expenses.filter(e => {
+      const name = (e.categories?.name || '').toLowerCase()
+      return name.includes('saving') || name.includes('invest') || e.description.toLowerCase().includes('sip') || e.description.toLowerCase().includes('mutual fund')
+    })
+    const totalSavings = savingsExp.reduce((s, e) => s + e.amount, 0)
+    const savingsRate = totalSpent > 0 ? Math.round((totalSavings / (totalSpent + totalSavings)) * 100) : 0
+
+    if (rentOrBills.length === 0) {
       results.push({
-        icon: '🛵',
-        title: `${foodDeliveryExpenses.length} food delivery orders this month`,
-        description: `You've spent ${formatCurrency(totalFoodDelivery)} on Swiggy/Zomato. Cooking just 3 extra meals a week could save you ~${formatCurrency(Math.round(totalFoodDelivery * 0.3))}/month.`,
-        type: 'tip',
+        icon: '🏡',
+        title: 'Living with Parents Advantage',
+        description: `Zero rent & zero household utility bills detected! This gives you a superpower to direct 40–50%+ of your income into Savings, SIPs, or Emergency Funds. ${totalSavings > 0 ? `You've allocated ${formatCurrency(totalSavings)} to investments this month.` : 'Tip: Set up an auto-debit SIP right after payday!'}`,
+        type: 'success',
       })
     }
 
-    // Recurring expenses
-    const recurringExpenses = expenses.filter(e => e.is_recurring)
-    if (recurringExpenses.length > 0) {
-      const recurringTotal = recurringExpenses.reduce((s, e) => s + e.amount, 0)
+    // Autopays breakdown: Daily vs Monthly
+    const autopayExpenses = expenses.filter(e => e.is_autopay || e.is_recurring)
+    if (autopayExpenses.length > 0) {
+      const dailyAutopays = autopayExpenses.filter(e => e.recurring_frequency === 'daily')
+      const monthlyAutopays = autopayExpenses.filter(e => e.recurring_frequency === 'monthly')
+      const dailySum = dailyAutopays.reduce((s, e) => s + e.amount, 0)
+      const monthlySum = monthlyAutopays.reduce((s, e) => s + e.amount, 0)
+      const projectedDaily = dailySum * 30
+
       results.push({
-        icon: '🔄',
-        title: `${recurringExpenses.length} recurring expenses tracked`,
-        description: `Your fixed monthly commitments total ${formatCurrency(recurringTotal)}. These are non-negotiable costs — plan your discretionary spending around them.`,
+        icon: '⚡',
+        title: `${autopayExpenses.length} Autopays & Recurring Deductions`,
+        description: `You have ${dailyAutopays.length} daily autopays (~${formatCurrency(dailySum)}/day, projecting to ~${formatCurrency(projectedDaily)}/month) and ${monthlyAutopays.length} monthly autopays (${formatCurrency(monthlySum)}/month). Keeping track prevents silent subscription creep.`,
         type: 'info',
+      })
+    }
+
+    // Food delivery & Cafes check
+    const foodDeliveryExpenses = expenses.filter(e => {
+      const d = e.description.toLowerCase()
+      const cat = (e.categories?.name || '').toLowerCase()
+      return d.includes('swiggy') || d.includes('zomato') || d.includes('starbucks') || d.includes('cafe') || cat.includes('cafe') || cat.includes('food outing')
+    })
+    if (foodDeliveryExpenses.length >= 3) {
+      const totalFoodDelivery = foodDeliveryExpenses.reduce((s, e) => s + e.amount, 0)
+      results.push({
+        icon: '☕',
+        title: `${foodDeliveryExpenses.length} Cafe & Food Outings (${formatCurrency(totalFoodDelivery)})`,
+        description: `Since regular home meals are taken care of by family, cafe hangs and delivery orders are purely discretionary. Enjoying them guilt-free works best when capped to a set monthly budget.`,
+        type: 'tip',
       })
     }
 

@@ -50,6 +50,8 @@ export interface Database {
           payment_method: string
           tags: string[]
           is_recurring: boolean
+          recurring_frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' | null
+          is_autopay: boolean
           notes: string | null
           created_at: string
         }
@@ -63,6 +65,8 @@ export interface Database {
           payment_method: string
           tags?: string[]
           is_recurring?: boolean
+          recurring_frequency?: 'daily' | 'weekly' | 'monthly' | 'yearly' | null
+          is_autopay?: boolean
           notes?: string | null
           created_at?: string
         }
@@ -76,6 +80,8 @@ export interface Database {
           payment_method?: string
           tags?: string[]
           is_recurring?: boolean
+          recurring_frequency?: 'daily' | 'weekly' | 'monthly' | 'yearly' | null
+          is_autopay?: boolean
           notes?: string | null
           created_at?: string
         }

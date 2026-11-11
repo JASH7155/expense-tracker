@@ -44,17 +44,16 @@ function getInitialExpenses(categories: Category[]): ExpenseWithCategory[] {
   const catMap = new Map(categories.map(c => [c.name, c]))
 
   const rawSample = [
-    { desc: 'Swiggy Dinner - Biryani & Coke', amount: 480, cat: 'Food & Dining', day: Math.max(1, currentDay), method: 'upi', tags: ['food', 'weekend'] },
-    { desc: 'Uber Ride to Office', amount: 260, cat: 'Transport', day: Math.max(1, currentDay - 1), method: 'upi', tags: ['commute'] },
-    { desc: 'Monthly Apartment Rent', amount: 18000, cat: 'Housing', day: 1, method: 'netbanking', isRecurring: true, tags: ['essential', 'rent'] },
-    { desc: 'Blinkit Grocery Order', amount: 1450, cat: 'Food & Dining', day: Math.max(1, currentDay - 2), method: 'upi', tags: ['groceries'] },
-    { desc: 'Netflix Subscription', amount: 649, cat: 'Entertainment', day: 5, method: 'card', isRecurring: true, tags: ['subscription'] },
-    { desc: 'Electricity Bill', amount: 1850, cat: 'Utilities', day: 7, method: 'upi', isRecurring: true, tags: ['bills'] },
-    { desc: 'Petrol - Full Tank', amount: 2100, cat: 'Transport', day: Math.max(1, currentDay - 4), method: 'card', tags: ['fuel'] },
-    { desc: 'Amazon - Noise Cancelling Headphones', amount: 3499, cat: 'Shopping', day: Math.max(1, currentDay - 5), method: 'card', tags: ['electronics'] },
-    { desc: 'Apollo Pharmacy - Vitamins & First Aid', amount: 540, cat: 'Health', day: Math.max(1, currentDay - 6), method: 'upi', tags: ['health'] },
-    { desc: 'Starbucks Coffee & Sandwich', amount: 420, cat: 'Food & Dining', day: Math.max(1, currentDay - 3), method: 'upi', tags: ['coffee'] },
-    { desc: 'SIP Mutual Fund Investment', amount: 5000, cat: 'Investments', day: 10, method: 'netbanking', isRecurring: true, tags: ['investment', 'sip'] },
+    { desc: 'Swiggy Dinner - Biryani & Wings', amount: 520, cat: 'Food Outings & Cafes', day: Math.max(1, currentDay), method: 'upi', isAutopay: false, freq: null, tags: ['food', 'weekend'] },
+    { desc: 'Metro Daily Commute Autopay', amount: 80, cat: 'Commute & Fuel', day: Math.max(1, currentDay - 1), method: 'upi', isAutopay: true, freq: 'daily' as const, tags: ['commute', 'autopay'] },
+    { desc: 'Spotify Premium Autopay', amount: 119, cat: 'Autopays & Subscriptions', day: 2, method: 'upi', isAutopay: true, freq: 'monthly' as const, tags: ['music', 'subscription'] },
+    { desc: 'Netflix 4K Autopay', amount: 649, cat: 'Autopays & Subscriptions', day: 5, method: 'card', isAutopay: true, freq: 'monthly' as const, tags: ['movies', 'subscription'] },
+    { desc: 'SIP Mutual Fund Auto-debit (Nifty 50)', amount: 10000, cat: 'Savings & Investments', day: 1, method: 'netbanking', isAutopay: true, freq: 'monthly' as const, tags: ['sip', 'investments'] },
+    { desc: 'Dinner treat for Mom & Dad', amount: 2400, cat: 'Family Treats & Gifts', day: Math.max(1, currentDay - 3), method: 'card', isAutopay: false, freq: null, tags: ['family', 'treat'] },
+    { desc: 'Blue Tokai Specialty Coffee', amount: 260, cat: 'Food Outings & Cafes', day: Math.max(1, currentDay - 2), method: 'upi', isAutopay: false, freq: null, tags: ['coffee'] },
+    { desc: 'Petrol - Bike Full Tank', amount: 750, cat: 'Commute & Fuel', day: Math.max(1, currentDay - 4), method: 'upi', isAutopay: false, freq: null, tags: ['fuel'] },
+    { desc: 'Mechanical Keyboard (Amazon)', amount: 3299, cat: 'Shopping & Tech', day: Math.max(1, currentDay - 5), method: 'card', isAutopay: false, freq: null, tags: ['tech'] },
+    { desc: 'Daily Morning Filter Coffee & Tea', amount: 40, cat: 'Food Outings & Cafes', day: Math.max(1, currentDay - 1), method: 'upi', isAutopay: true, freq: 'daily' as const, tags: ['daily', 'autopay'] },
   ]
 
   return rawSample.map((item, idx) => {
@@ -69,7 +68,9 @@ function getInitialExpenses(categories: Category[]): ExpenseWithCategory[] {
       date: `${year}-${month}-${dayStr}`,
       payment_method: item.method,
       tags: item.tags,
-      is_recurring: item.isRecurring || false,
+      is_recurring: item.isAutopay || false,
+      recurring_frequency: item.freq || null,
+      is_autopay: item.isAutopay || false,
       notes: null,
       created_at: new Date().toISOString(),
       categories: category,
@@ -80,9 +81,9 @@ function getInitialExpenses(categories: Category[]): ExpenseWithCategory[] {
 function getInitialBudgets(categories: Category[]): Budget[] {
   const now = new Date()
   const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-  const foodCat = categories.find(c => c.name === 'Food & Dining')
-  const transportCat = categories.find(c => c.name === 'Transport')
-  const shoppingCat = categories.find(c => c.name === 'Shopping')
+  const foodCat = categories.find(c => c.name === 'Food Outings & Cafes')
+  const transportCat = categories.find(c => c.name === 'Commute & Fuel')
+  const shoppingCat = categories.find(c => c.name === 'Shopping & Tech')
 
   const list: Budget[] = [
     {

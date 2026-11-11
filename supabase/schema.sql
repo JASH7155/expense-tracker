@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.categories (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Expenses table
+-- Expenses table with Autopay & Frequency support
 CREATE TABLE IF NOT EXISTS public.expenses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -20,9 +20,22 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   payment_method TEXT NOT NULL DEFAULT 'upi' CHECK (payment_method IN ('cash', 'upi', 'card', 'netbanking', 'other')),
   tags TEXT[] DEFAULT '{}',
   is_recurring BOOLEAN DEFAULT false,
+  recurring_frequency TEXT DEFAULT NULL CHECK (recurring_frequency IN ('daily', 'weekly', 'monthly', 'yearly', NULL)),
+  is_autopay BOOLEAN DEFAULT false,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- If table already exists, safely add columns
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'expenses' AND column_name = 'recurring_frequency') THEN
+    ALTER TABLE public.expenses ADD COLUMN recurring_frequency TEXT DEFAULT NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'expenses' AND column_name = 'is_autopay') THEN
+    ALTER TABLE public.expenses ADD COLUMN is_autopay BOOLEAN DEFAULT false;
+  END IF;
+END $$;
 
 -- Budgets table
 CREATE TABLE IF NOT EXISTS public.budgets (
@@ -35,12 +48,11 @@ CREATE TABLE IF NOT EXISTS public.budgets (
   UNIQUE(user_id, category_id, month)
 );
 
--- Row Level Security
+-- Row Level Security (Complete Multi-user Isolation)
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
 
--- Drop old policies if re-running
 DROP POLICY IF EXISTS "Users can only access their own categories" ON public.categories;
 DROP POLICY IF EXISTS "Users can only access their own expenses" ON public.expenses;
 DROP POLICY IF EXISTS "Users can only access their own budgets" ON public.budgets;
@@ -59,7 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON public.expenses(user_id, da
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON public.expenses(category_id);
 CREATE INDEX IF NOT EXISTS idx_budgets_user_month ON public.budgets(user_id, month);
 
--- Trigger function with search_path = public and exception safety
+-- Tailored trigger function for young professionals / living with parents
 CREATE OR REPLACE FUNCTION public.seed_default_categories()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -68,27 +80,25 @@ SET search_path = public
 AS $$
 BEGIN
   INSERT INTO public.categories (user_id, name, icon, color, is_default) VALUES
-    (NEW.id, 'Food & Dining', '🍔', '#f97316', true),
-    (NEW.id, 'Transport', '🚗', '#3b82f6', true),
-    (NEW.id, 'Shopping', '🛍️', '#a855f7', true),
-    (NEW.id, 'Housing', '🏠', '#14b8a6', true),
-    (NEW.id, 'Entertainment', '🎬', '#ec4899', true),
-    (NEW.id, 'Health', '💊', '#ef4444', true),
-    (NEW.id, 'Education', '📚', '#f59e0b', true),
-    (NEW.id, 'Travel', '✈️', '#06b6d4', true),
-    (NEW.id, 'Investments', '💰', '#22c55e', true),
-    (NEW.id, 'Utilities', '🔧', '#64748b', true),
-    (NEW.id, 'Gifts', '🎁', '#f43f5e', true),
+    (NEW.id, 'Food Outings & Cafes', '🍔', '#f97316', true),
+    (NEW.id, 'Commute & Fuel', '🛵', '#3b82f6', true),
+    (NEW.id, 'Shopping & Tech', '🛍️', '#a855f7', true),
+    (NEW.id, 'Entertainment & Outings', '🎬', '#ec4899', true),
+    (NEW.id, 'Autopays & Subscriptions', '⚡', '#06b6d4', true),
+    (NEW.id, 'Savings & Investments', '💰', '#22c55e', true),
+    (NEW.id, 'Family Treats & Gifts', '🎁', '#f43f5e', true),
+    (NEW.id, 'Personal Care & Health', '💊', '#ef4444', true),
+    (NEW.id, 'Learning & Courses', '📚', '#f59e0b', true),
+    (NEW.id, 'Trips & Travel', '🌴', '#14b8a6', true),
+    (NEW.id, 'Home Contributions', '🏠', '#64748b', true),
     (NEW.id, 'Miscellaneous', '🏷️', '#6b7280', true);
   RETURN NEW;
 EXCEPTION
   WHEN OTHERS THEN
-    -- Ensure user creation never fails even if category seeding hits an issue
     RETURN NEW;
 END;
 $$;
 
--- Drop and recreate trigger
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
 CREATE TRIGGER on_auth_user_created

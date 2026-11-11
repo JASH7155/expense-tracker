@@ -12,6 +12,7 @@ export default function ExpensesPage() {
   const [paymentFilter, setPaymentFilter] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [autopayOnly, setAutopayOnly] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const { expenses, loading, refetch } = useExpenses({
@@ -23,7 +24,12 @@ export default function ExpensesPage() {
   })
   const { categories } = useCategories()
 
-  const totalShown = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses])
+  const displayedExpenses = useMemo(() => {
+    if (!autopayOnly) return expenses
+    return expenses.filter(e => e.is_autopay || e.is_recurring)
+  }, [expenses, autopayOnly])
+
+  const totalShown = useMemo(() => displayedExpenses.reduce((s, e) => s + e.amount, 0), [displayedExpenses])
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this expense?')) return
@@ -38,7 +44,10 @@ export default function ExpensesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Expenses</h1>
-          <p className="text-gray-400 text-sm">{expenses.length} transactions · {formatCurrency(totalShown)}</p>
+          <p className="text-gray-400 text-sm">
+            {displayedExpenses.length} transactions · {formatCurrency(totalShown)}
+            {autopayOnly && ' (Autopays filtered)'}
+          </p>
         </div>
         <Link
           href="/expenses/new"
@@ -91,64 +100,93 @@ export default function ExpensesPage() {
             className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
           />
         </div>
-        {(search || categoryFilter || paymentFilter || startDate || endDate) && (
-          <button
-            onClick={() => { setSearch(''); setCategoryFilter(''); setPaymentFilter(''); setStartDate(''); setEndDate('') }}
-            className="mt-3 text-xs text-gray-400 hover:text-white"
-          >
-            ✕ Clear filters
-          </button>
-        )}
+
+        {/* Quick Filter Chips */}
+        <div className="mt-3 flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-[#21262d]">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAutopayOnly(!autopayOnly)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1.5 ${
+                autopayOnly
+                  ? 'bg-blue-600 text-white border-blue-500 font-medium'
+                  : 'bg-[#0d1117] text-gray-400 border-[#30363d] hover:text-white'
+              }`}
+            >
+              <span>⚡</span>
+              <span>Autopays &amp; Recurring Only</span>
+            </button>
+          </div>
+
+          {(search || categoryFilter || paymentFilter || startDate || endDate || autopayOnly) && (
+            <button
+              onClick={() => { setSearch(''); setCategoryFilter(''); setPaymentFilter(''); setStartDate(''); setEndDate(''); setAutopayOnly(false); }}
+              className="text-xs text-gray-400 hover:text-white"
+            >
+              ✕ Clear filters
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Expense List */}
       <div className="bg-[#161b22] border border-[#30363d] rounded-xl overflow-hidden">
         {loading ? (
           <div className="text-center py-16 text-gray-400">Loading...</div>
-        ) : expenses.length === 0 ? (
+        ) : displayedExpenses.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">💸</p>
-            <p className="text-gray-400">No expenses found.</p>
+            <p className="text-gray-400">
+              {autopayOnly ? 'No autopays or recurring deductions found.' : 'No expenses found.'}
+            </p>
             <Link href="/expenses/new" className="mt-3 inline-block text-blue-400 hover:text-blue-300 text-sm">
               Add your first expense →
             </Link>
           </div>
         ) : (
           <div className="divide-y divide-[#30363d]">
-            {expenses.map((expense) => (
-              <div key={expense.id} className="flex items-center gap-4 p-4 hover:bg-[#21262d] transition-colors">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                  style={{ backgroundColor: `${expense.categories?.color || '#6b7280'}20` }}
-                >
-                  {expense.categories?.icon || '🏷️'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-sm truncate">{expense.description}</p>
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <span className="text-xs text-gray-500">{expense.categories?.name || 'Misc'}</span>
-                    <span className="text-gray-600">·</span>
-                    <span className="text-xs text-gray-500">{formatDate(expense.date)}</span>
-                    <span className="text-gray-600">·</span>
-                    <span className="text-xs text-gray-500 uppercase">{expense.payment_method}</span>
-                    {expense.is_recurring && (
-                      <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">🔄 Recurring</span>
-                    )}
+            {displayedExpenses.map((expense) => {
+              const isRecurringOrAutopay = expense.is_autopay || expense.is_recurring
+              const freq = (expense as any).recurring_frequency
+
+              return (
+                <div key={expense.id} className="flex items-center gap-4 p-4 hover:bg-[#21262d] transition-colors">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                    style={{ backgroundColor: `${expense.categories?.color || '#6b7280'}20` }}
+                  >
+                    {expense.categories?.icon || '🏷️'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium text-sm truncate">{expense.description}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-xs text-gray-500">{expense.categories?.name || 'Misc'}</span>
+                      <span className="text-gray-600">·</span>
+                      <span className="text-xs text-gray-500">{formatDate(expense.date)}</span>
+                      <span className="text-gray-600">·</span>
+                      <span className="text-xs text-gray-500 uppercase">{expense.payment_method}</span>
+                      {isRecurringOrAutopay && (
+                        <span className="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30 flex items-center gap-1">
+                          <span>⚡</span>
+                          <span className="capitalize">{freq ? `${freq} Autopay` : 'Autopay'}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-white font-semibold flex-shrink-0">{formatCurrency(expense.amount)}</p>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Link href={`/expenses/${expense.id}/edit`} className="text-gray-500 hover:text-blue-400 text-sm transition-colors">✏️</Link>
+                    <button
+                      onClick={() => handleDelete(expense.id)}
+                      disabled={deleting === expense.id}
+                      className="text-gray-500 hover:text-red-400 text-sm transition-colors disabled:opacity-50"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
-                <p className="text-white font-semibold flex-shrink-0">{formatCurrency(expense.amount)}</p>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Link href={`/expenses/${expense.id}/edit`} className="text-gray-500 hover:text-blue-400 text-sm transition-colors">✏️</Link>
-                  <button
-                    onClick={() => handleDelete(expense.id)}
-                    disabled={deleting === expense.id}
-                    className="text-gray-500 hover:text-red-400 text-sm transition-colors disabled:opacity-50"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

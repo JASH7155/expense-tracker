@@ -1,14 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { useMonthlyExpenses, useCategories, useBudgets } from '@/lib/hooks'
-import { formatCurrency, getMonthLabel, getCurrentMonthRange } from '@/lib/utils'
-import { ExpenseWithCategory } from '@/types/database'
+import { formatCurrency, getMonthLabel } from '@/lib/utils'
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Legend,
-  BarChart, Bar
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
 } from 'recharts'
 
 function StatCard({ title, value, sub, icon, color }: {
@@ -37,6 +35,10 @@ export default function DashboardPage() {
     const today = new Date().toISOString().split('T')[0]
     const todayTotal = expenses.filter(e => e.date === today).reduce((sum, e) => sum + e.amount, 0)
     const avgDaily = total / (now.getDate() || 1)
+
+    // Autopays
+    const autopays = expenses.filter(e => e.is_autopay || e.is_recurring)
+    const autopayTotal = autopays.reduce((sum, e) => sum + e.amount, 0)
 
     // Category breakdown
     const byCategory: Record<string, { name: string; total: number; icon: string; color: string }> = {}
@@ -69,7 +71,7 @@ export default function DashboardPage() {
       }
     })
 
-    return { total, todayTotal, avgDaily, byCategory, dailyData }
+    return { total, todayTotal, avgDaily, autopays, autopayTotal, byCategory, dailyData }
   }, [expenses])
 
   const overallBudget = budgets.find(b => b.category_id === null)
@@ -105,7 +107,7 @@ export default function DashboardPage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total This Month"
+          title="Total Spent"
           value={formatCurrency(stats.total)}
           icon="💸"
           sub={`${expenses.length} txns`}
@@ -119,11 +121,11 @@ export default function DashboardPage() {
           color="text-green-400 bg-green-400/10"
         />
         <StatCard
-          title="Daily Average"
-          value={formatCurrency(Math.round(stats.avgDaily))}
-          icon="📈"
-          sub="This month"
-          color="text-yellow-400 bg-yellow-400/10"
+          title="Autopays & Subscriptions"
+          value={formatCurrency(stats.autopayTotal)}
+          icon="⚡"
+          sub={`${stats.autopays.length} active`}
+          color="text-cyan-400 bg-cyan-400/10"
         />
         <StatCard
           title="Budget Left"
@@ -133,6 +135,44 @@ export default function DashboardPage() {
           color="text-purple-400 bg-purple-400/10"
         />
       </div>
+
+      {/* Autopays & Subscriptions Highlight */}
+      {stats.autopays.length > 0 && (
+        <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚡</span>
+              <div>
+                <h2 className="text-white font-semibold text-sm">Autopays &amp; Recurring Commitments</h2>
+                <p className="text-gray-400 text-xs">
+                  {stats.autopays.length} active recurring deduction{stats.autopays.length > 1 ? 's' : ''} (SIP, daily commute, OTT)
+                </p>
+              </div>
+            </div>
+            <Link href="/expenses" className="text-xs text-blue-400 hover:text-blue-300">
+              Manage in Expenses →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {stats.autopays.slice(0, 3).map((item) => {
+              const freq = (item as any).recurring_frequency
+              return (
+                <div key={item.id} className="bg-[#21262d] rounded-lg p-3 flex items-center justify-between">
+                  <div className="truncate mr-2">
+                    <p className="text-white text-xs font-medium truncate">{item.description}</p>
+                    <p className="text-cyan-400 text-[11px] capitalize">
+                      {freq ? `${freq} Autopay` : 'Recurring'}
+                    </p>
+                  </div>
+                  <span className="text-white font-semibold text-xs whitespace-nowrap">
+                    {formatCurrency(item.amount)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Budget Progress */}
       {budgetPercent !== null && (
@@ -235,7 +275,10 @@ export default function DashboardPage() {
                 <span className="text-xl">{expense.categories?.icon || '🏷️'}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium truncate">{expense.description}</p>
-                  <p className="text-gray-500 text-xs">{expense.categories?.name || 'Misc'} · {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
+                  <p className="text-gray-500 text-xs">
+                    {expense.categories?.name || 'Misc'} · {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                    {(expense.is_autopay || expense.is_recurring) && ' · ⚡ Autopay'}
+                  </p>
                 </div>
                 <span className="text-white font-semibold text-sm">{formatCurrency(expense.amount)}</span>
               </div>

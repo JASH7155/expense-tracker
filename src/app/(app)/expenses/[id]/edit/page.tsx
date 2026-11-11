@@ -6,8 +6,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useCategories } from '@/lib/hooks'
-import { categorizeExpense } from '@/lib/categorize'
-import { PAYMENT_METHODS } from '@/lib/utils'
+import { PAYMENT_METHODS, AUTOPAY_FREQUENCIES } from '@/lib/utils'
 import { Category, ExpenseWithCategory } from '@/types/database'
 
 export default function EditExpensePage() {
@@ -26,7 +25,8 @@ export default function EditExpensePage() {
     date: new Date().toISOString().split('T')[0],
     payment_method: 'upi',
     tags: '',
-    is_recurring: false,
+    is_autopay: false,
+    recurring_frequency: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
     notes: '',
   })
 
@@ -52,7 +52,8 @@ export default function EditExpensePage() {
         date: exp.date,
         payment_method: exp.payment_method,
         tags: (exp.tags || []).join(', '),
-        is_recurring: exp.is_recurring,
+        is_autopay: exp.is_autopay ?? exp.is_recurring ?? false,
+        recurring_frequency: (exp.recurring_frequency as any) || 'monthly',
         notes: exp.notes || '',
       })
       setFetching(false)
@@ -79,7 +80,9 @@ export default function EditExpensePage() {
         date: form.date,
         payment_method: form.payment_method,
         tags,
-        is_recurring: form.is_recurring,
+        is_recurring: form.is_autopay,
+        recurring_frequency: form.is_autopay ? form.recurring_frequency : null,
+        is_autopay: form.is_autopay,
         notes: form.notes || null,
       })
       .eq('id', id)
@@ -192,6 +195,54 @@ export default function EditExpensePage() {
             </div>
           </div>
 
+          {/* Autopay / Recurring Section */}
+          <div className="p-4 bg-[#0d1117] rounded-xl border border-[#30363d] space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="autopay"
+                  checked={form.is_autopay}
+                  onChange={(e) => setForm(f => ({ ...f, is_autopay: e.target.checked }))}
+                  className="w-4 h-4 accent-blue-500 rounded cursor-pointer"
+                />
+                <label htmlFor="autopay" className="text-sm font-medium text-white cursor-pointer">
+                  ⚡ Autopay / Recurring Deduction
+                </label>
+              </div>
+              {form.is_autopay && (
+                <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-medium border border-blue-500/30">
+                  Recurring Active
+                </span>
+              )}
+            </div>
+
+            {form.is_autopay && (
+              <div className="pt-2 border-t border-[#21262d] pl-7 space-y-2">
+                <label className="block text-xs font-medium text-gray-300">
+                  Autopay Frequency
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {AUTOPAY_FREQUENCIES.map((freq) => (
+                    <button
+                      key={freq.value}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, recurring_frequency: freq.value as any }))}
+                      className={`p-2 rounded-lg border text-left text-xs transition-colors flex items-center gap-2 ${
+                        form.recurring_frequency === freq.value
+                          ? 'border-blue-500 bg-blue-500/20 text-white'
+                          : 'border-[#30363d] text-gray-400 hover:border-gray-500'
+                      }`}
+                    >
+                      <span>{freq.icon}</span>
+                      <span className="font-medium">{freq.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Tags */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -217,20 +268,6 @@ export default function EditExpensePage() {
               rows={2}
               className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
             />
-          </div>
-
-          {/* Recurring Toggle */}
-          <div className="flex items-center gap-3 p-3 bg-[#0d1117] rounded-lg border border-[#30363d]">
-            <input
-              type="checkbox"
-              id="recurring"
-              checked={form.is_recurring}
-              onChange={(e) => setForm(f => ({ ...f, is_recurring: e.target.checked }))}
-              className="w-4 h-4 accent-blue-500"
-            />
-            <label htmlFor="recurring" className="text-sm text-gray-300 cursor-pointer">
-              🔄 This is a recurring expense
-            </label>
           </div>
 
           {/* Submit */}

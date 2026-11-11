@@ -5,38 +5,74 @@ type CategoryKeywords = {
 }
 
 const CATEGORY_RULES: Record<string, CategoryKeywords> = {
-  'Food & Dining': {
-    keywords: ['swiggy', 'zomato', 'restaurant', 'cafe', 'coffee', 'lunch', 'dinner', 'breakfast', 'food', 'pizza', 'burger', 'biryani', 'hotel', 'dhaba', 'eat', 'meal', 'snack', 'tea', 'juice', 'grocery', 'vegetables', 'fruits', 'supermarket', 'kirana', 'blinkit', 'zepto', 'instamart', 'dominos', 'mcdonalds', 'kfc', 'starbucks'],
+  'Food Outings & Cafes': {
+    keywords: [
+      'swiggy', 'zomato', 'restaurant', 'cafe', 'coffee', 'chai', 'tea', 'lunch',
+      'dinner', 'breakfast', 'pizza', 'burger', 'biryani', 'mcdonalds', 'kfc',
+      'starbucks', 'subway', 'dominos', 'boba', 'bakery', 'pastry', 'snack',
+      'shawarma', 'momos', 'blinkit', 'zepto', 'instamart'
+    ],
   },
-  'Transport': {
-    keywords: ['ola', 'uber', 'rapido', 'auto', 'rickshaw', 'metro', 'bus', 'train', 'flight', 'petrol', 'diesel', 'fuel', 'parking', 'toll', 'cab', 'taxi', 'irctc', 'redbus', 'indigo', 'spicejet', 'airindia'],
+  'Commute & Fuel': {
+    keywords: [
+      'ola', 'uber', 'rapido', 'auto', 'metro', 'petrol', 'fuel', 'diesel',
+      'bus', 'train', 'irctc', 'parking', 'toll', 'fastag', 'taxi', 'bike'
+    ],
   },
-  'Shopping': {
-    keywords: ['amazon', 'flipkart', 'myntra', 'ajio', 'meesho', 'nykaa', 'clothing', 'shoes', 'shirt', 'jeans', 'dress', 'accessories', 'watch', 'bag', 'purse', 'electronics', 'mobile', 'laptop', 'headphone', 'earphone', 'gadget', 'appliance'],
+  'Shopping & Tech': {
+    keywords: [
+      'amazon', 'flipkart', 'myntra', 'ajio', 'meesho', 'nykaa', 'zara', 'h&m',
+      'clothing', 'shoes', 'sneakers', 'shirt', 'jeans', 'watch', 'bag',
+      'electronics', 'gadget', 'headphones', 'earphones', 'laptop', 'charger',
+      'mouse', 'keyboard', 'phone', 'croma', 'reliance digital'
+    ],
   },
-  'Housing': {
-    keywords: ['rent', 'maintenance', 'electricity', 'water', 'gas', 'internet', 'wifi', 'broadband', 'property', 'apartment', 'house', 'cleaning', 'furniture', 'repair', 'plumber', 'electrician'],
+  'Entertainment & Outings': {
+    keywords: [
+      'pvr', 'inox', 'movie', 'cinema', 'bookmyshow', 'concert', 'gaming', 'steam',
+      'ps5', 'playstation', 'xbox', 'club', 'party', 'bowling', 'arcade', 'pub', 'bar'
+    ],
   },
-  'Entertainment': {
-    keywords: ['netflix', 'amazon prime', 'hotstar', 'disney', 'spotify', 'youtube', 'movie', 'cinema', 'pvr', 'inox', 'gaming', 'game', 'ps5', 'xbox', 'concert', 'show', 'event', 'party', 'club', 'bar', 'pub'],
+  'Autopays & Subscriptions': {
+    keywords: [
+      'netflix', 'spotify', 'youtube premium', 'prime', 'hotstar', 'disney',
+      'apple', 'icloud', 'google one', 'gym', 'membership', 'recharge',
+      'jio', 'airtel', 'vi', 'subscription', 'autopay', 'annual fee'
+    ],
   },
-  'Health': {
-    keywords: ['pharmacy', 'medicine', 'doctor', 'hospital', 'clinic', 'gym', 'fitness', 'yoga', 'health', 'medical', 'diagnostic', 'lab', 'test', 'dentist', 'optical', 'spectacles', 'lens', '1mg', 'netmeds', 'practo'],
+  'Savings & Investments': {
+    keywords: [
+      'sip', 'mutual fund', 'zerodha', 'groww', 'upstox', 'stocks', 'shares',
+      'fd', 'fixed deposit', 'ppf', 'nps', 'gold', 'crypto', 'savings', 'chit'
+    ],
   },
-  'Education': {
-    keywords: ['course', 'udemy', 'coursera', 'book', 'study', 'tuition', 'coaching', 'school', 'college', 'university', 'exam', 'fee', 'stationary', 'pen', 'notebook', 'skillshare', 'pluralsight'],
+  'Family Treats & Gifts': {
+    keywords: [
+      'mom', 'dad', 'parents', 'family', 'gift', 'birthday', 'anniversary',
+      'sweets', 'mithai', 'treat', 'festival', 'diwali', 'rakhi'
+    ],
   },
-  'Travel': {
-    keywords: ['hotel', 'resort', 'vacation', 'holiday', 'trip', 'tour', 'booking.com', 'oyo', 'makemytrip', 'yatra', 'goibibo', 'airbnb', 'visa', 'passport', 'travel'],
+  'Personal Care & Health': {
+    keywords: [
+      'salon', 'haircut', 'spa', 'grooming', 'perfume', 'skincare', 'pharmacy',
+      'medicine', 'doctor', '1mg', 'netmeds', 'gym', 'creatine', 'protein',
+      'vitamins', 'cult'
+    ],
   },
-  'Investments': {
-    keywords: ['sip', 'mutual fund', 'stocks', 'shares', 'zerodha', 'groww', 'upstox', 'ppf', 'fd', 'fixed deposit', 'gold', 'crypto', 'nps', 'lic', 'insurance', 'policy'],
+  'Learning & Courses': {
+    keywords: [
+      'udemy', 'coursera', 'course', 'book', 'kindle', 'certification',
+      'tutorial', 'exam', 'skillshare', 'coaching', 'medium', 'substack'
+    ],
   },
-  'Utilities': {
-    keywords: ['phone', 'recharge', 'airtel', 'jio', 'vi', 'bsnl', 'subscription', 'annual', 'renewal', 'bill'],
+  'Trips & Travel': {
+    keywords: [
+      'flight', 'hotel', 'resort', 'trip', 'vacation', 'goibibo', 'makemytrip',
+      'airbnb', 'booking.com', 'travel', 'holiday', 'weekend trip', 'trek'
+    ],
   },
-  'Gifts': {
-    keywords: ['gift', 'donation', 'charity', 'ngo', 'birthday', 'anniversary', 'wedding', 'present'],
+  'Home Contributions': {
+    keywords: ['electricity', 'wifi', 'broadband', 'groceries', 'supermarket', 'maid', 'maintenance'],
   },
 }
 
@@ -47,7 +83,9 @@ export function categorizeExpense(description: string, categories: Category[]): 
     for (const keyword of keywords) {
       if (lowerDesc.includes(keyword)) {
         const matched = categories.find(
-          (c) => c.name.toLowerCase() === categoryName.toLowerCase()
+          (c) =>
+            c.name.toLowerCase() === categoryName.toLowerCase() ||
+            c.name.toLowerCase().includes(categoryName.toLowerCase().split(' ')[0])
         )
         if (matched) return matched
       }
