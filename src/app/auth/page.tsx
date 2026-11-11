@@ -1,15 +1,60 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 export default function AuthPage() {
+  const router = useRouter()
+  const [mode, setMode] = useState<'password' | 'magic'>('password')
+  const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [magicSent, setMagicSent] = useState(false)
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handlePasswordAuth(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    setMessage('')
+
+    if (isSignUp) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      })
+
+      if (error) {
+        setError(error.message)
+      } else if (data.session) {
+        // User logged in immediately (email confirmation disabled in Supabase)
+        router.push('/dashboard')
+      } else {
+        setMessage('Account created! You can now sign in below.')
+        setIsSignUp(false)
+      }
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        setError(error.message)
+      } else if (data.session) {
+        router.push('/dashboard')
+      }
+    }
+    setLoading(false)
+  }
+
+  async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -24,7 +69,7 @@ export default function AuthPage() {
     if (error) {
       setError(error.message)
     } else {
-      setSent(true)
+      setMagicSent(true)
     }
     setLoading(false)
   }
@@ -41,35 +86,134 @@ export default function AuthPage() {
 
         {/* Auth Card */}
         <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8">
-          {sent ? (
+          {/* Method Selector */}
+          <div className="grid grid-cols-2 bg-[#0d1117] p-1 rounded-xl mb-6 border border-[#30363d]">
+            <button
+              type="button"
+              onClick={() => { setMode('password'); setError(''); }}
+              className={`py-2 text-sm font-medium rounded-lg transition-colors ${
+                mode === 'password'
+                  ? 'bg-[#21262d] text-white shadow-sm'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Password (Instant)
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('magic'); setError(''); setMagicSent(false); }}
+              className={`py-2 text-sm font-medium rounded-lg transition-colors ${
+                mode === 'magic'
+                  ? 'bg-[#21262d] text-white shadow-sm'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Magic Link
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-sm">
+              {message}
+            </div>
+          )}
+
+          {mode === 'password' ? (
+            <form onSubmit={handlePasswordAuth}>
+              <h2 className="text-xl font-semibold text-white mb-1">
+                {isSignUp ? 'Create your account' : 'Sign in with password'}
+              </h2>
+              <p className="text-gray-400 text-sm mb-6">
+                {isSignUp
+                  ? 'Enter an email and password to get started immediately.'
+                  : 'Welcome back! Enter your credentials to access your dashboard.'}
+              </p>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    minLength={6}
+                    className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !email || !password}
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors"
+              >
+                {loading
+                  ? 'Processing...'
+                  : isSignUp
+                  ? 'Create Account 🚀'
+                  : 'Sign In 🔑'}
+              </button>
+
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => { setIsSignUp(!isSignUp); setError(''); setMessage(''); }}
+                  className="text-sm text-gray-400 hover:text-blue-400"
+                >
+                  {isSignUp
+                    ? 'Already have an account? Sign in'
+                    : "Don't have an account? Create one"}
+                </button>
+              </div>
+            </form>
+          ) : magicSent ? (
             <div className="text-center">
               <div className="text-4xl mb-4">📧</div>
               <h2 className="text-xl font-semibold text-white mb-2">Check your email!</h2>
               <p className="text-gray-400 text-sm">
                 We sent a magic link to <strong className="text-white">{email}</strong>.
-                Click it to sign in — no password needed.
+                Click it to sign in.
               </p>
               <button
-                onClick={() => { setSent(false); setEmail('') }}
+                type="button"
+                onClick={() => { setMagicSent(false); setEmail(''); }}
                 className="mt-6 text-sm text-blue-400 hover:text-blue-300"
               >
                 Use a different email
               </button>
             </div>
           ) : (
-            <form onSubmit={handleLogin}>
-              <h2 className="text-xl font-semibold text-white mb-1">Sign in</h2>
+            <form onSubmit={handleMagicLink}>
+              <h2 className="text-xl font-semibold text-white mb-1">Magic Link</h2>
               <p className="text-gray-400 text-sm mb-6">
-                Enter your email to receive a magic link — no password needed.
+                Receive a login link in your inbox.
               </p>
 
-              {error && (
-                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                  {error}
-                </div>
-              )}
-
-              <div className="mb-4">
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Email address
                 </label>
