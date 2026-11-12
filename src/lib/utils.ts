@@ -62,18 +62,14 @@ export const AUTOPAY_FREQUENCIES = [
   { value: 'yearly', label: 'Yearly (Annual renewal)', icon: '📆' },
 ] as const
 
-// Tailored categories for young professionals / living with parents (Minimal, elegant palette)
+// Simple, clean core categories
 export const DEFAULT_CATEGORIES = [
-  { name: 'Food Outings & Cafes', icon: '🍔', color: '#71717a' },
-  { name: 'Commute & Fuel', icon: '🛵', color: '#64748b' },
-  { name: 'Shopping & Tech', icon: '🛍️', color: '#78716c' },
-  { name: 'Entertainment & Outings', icon: '🎬', color: '#52525b' },
-  { name: 'Autopays & Subscriptions', icon: '⚡', color: '#475569' },
-  { name: 'Savings & Investments', icon: '💰', color: '#3f3f46' },
-  { name: 'Family Treats & Gifts', icon: '🎁', color: '#737373' },
-  { name: 'Personal Care & Health', icon: '💊', color: '#6b7280' },
-  { name: 'Learning & Courses', icon: '📚', color: '#525252' },
-  { name: 'Trips & Travel', icon: '🌴', color: '#57534e' },
-  { name: 'Home Contributions', icon: '🏠', color: '#64748b' },
-  { name: 'Miscellaneous', icon: '🏷️', color: '#71717a' },
+  { name: 'Food & Dining', icon: '🍔', color: '#71717a' },
+  { name: 'Commute & Travel', icon: '🛵', color: '#64748b' },
+  { name: 'Shopping', icon: '🛍️', color: '#78716c' },
+  { name: 'Entertainment', icon: '🎬', color: '#52525b' },
+  { name: 'Subscriptions', icon: '⚡', color: '#475569' },
+  { name: 'Investments & Savings', icon: '💰', color: '#3f3f46' },
+  { name: 'Family & Gifts', icon: '🎁', color: '#737373' },
+  { name: 'Other', icon: '🏷️', color: '#71717a' },
 ] as const

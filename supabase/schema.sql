@@ -72,7 +72,7 @@ CREATE INDEX IF NOT EXISTS idx_expenses_category ON public.expenses(category_id)
 CREATE INDEX IF NOT EXISTS idx_expenses_autopay ON public.expenses(user_id, is_autopay);
 CREATE INDEX IF NOT EXISTS idx_budgets_user_month ON public.budgets(user_id, month);
 
--- Tailored trigger function for young professionals / living with parents
+-- Trigger function to seed simple default categories
 CREATE OR REPLACE FUNCTION public.seed_default_categories()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -81,18 +81,14 @@ SET search_path = public
 AS $$
 BEGIN
   INSERT INTO public.categories (user_id, name, icon, color, is_default) VALUES
-    (NEW.id, 'Food Outings & Cafes', '🍔', '#f97316', true),
-    (NEW.id, 'Commute & Fuel', '🛵', '#3b82f6', true),
-    (NEW.id, 'Shopping & Tech', '🛍️', '#a855f7', true),
-    (NEW.id, 'Entertainment & Outings', '🎬', '#ec4899', true),
-    (NEW.id, 'Autopays & Subscriptions', '⚡', '#06b6d4', true),
-    (NEW.id, 'Savings & Investments', '💰', '#22c55e', true),
-    (NEW.id, 'Family Treats & Gifts', '🎁', '#f43f5e', true),
-    (NEW.id, 'Personal Care & Health', '💊', '#ef4444', true),
-    (NEW.id, 'Learning & Courses', '📚', '#f59e0b', true),
-    (NEW.id, 'Trips & Travel', '🌴', '#14b8a6', true),
-    (NEW.id, 'Home Contributions', '🏠', '#64748b', true),
-    (NEW.id, 'Miscellaneous', '🏷️', '#6b7280', true);
+    (NEW.id, 'Food & Dining', '🍔', '#71717a', true),
+    (NEW.id, 'Commute & Travel', '🛵', '#64748b', true),
+    (NEW.id, 'Shopping', '🛍️', '#78716c', true),
+    (NEW.id, 'Entertainment', '🎬', '#52525b', true),
+    (NEW.id, 'Subscriptions', '⚡', '#475569', true),
+    (NEW.id, 'Investments & Savings', '💰', '#3f3f46', true),
+    (NEW.id, 'Family & Gifts', '🎁', '#737373', true),
+    (NEW.id, 'Other', '🏷️', '#71717a', true);
   RETURN NEW;
 EXCEPTION
   WHEN OTHERS THEN
@@ -106,24 +102,20 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.seed_default_categories();
 
--- Seed categories for any existing accounts created before this script
+-- Seed simple categories for any existing accounts created before this script
 INSERT INTO public.categories (user_id, name, icon, color, is_default)
 SELECT u.id, c.name, c.icon, c.color, true
 FROM auth.users u
 CROSS JOIN (
   VALUES
-    ('Food Outings & Cafes', '🍔', '#f97316'),
-    ('Commute & Fuel', '🛵', '#3b82f6'),
-    ('Shopping & Tech', '🛍️', '#a855f7'),
-    ('Entertainment & Outings', '🎬', '#ec4899'),
-    ('Autopays & Subscriptions', '⚡', '#06b6d4'),
-    ('Savings & Investments', '💰', '#22c55e'),
-    ('Family Treats & Gifts', '🎁', '#f43f5e'),
-    ('Personal Care & Health', '💊', '#ef4444'),
-    ('Learning & Courses', '📚', '#f59e0b'),
-    ('Trips & Travel', '🌴', '#14b8a6'),
-    ('Home Contributions', '🏠', '#64748b'),
-    ('Miscellaneous', '🏷️', '#6b7280')
+    ('Food & Dining', '🍔', '#71717a'),
+    ('Commute & Travel', '🛵', '#64748b'),
+    ('Shopping', '🛍️', '#78716c'),
+    ('Entertainment', '🎬', '#52525b'),
+    ('Subscriptions', '⚡', '#475569'),
+    ('Investments & Savings', '💰', '#3f3f46'),
+    ('Family & Gifts', '🎁', '#737373'),
+    ('Other', '🏷️', '#71717a')
 ) AS c(name, icon, color)
 WHERE NOT EXISTS (
   SELECT 1 FROM public.categories cat WHERE cat.user_id = u.id AND cat.name = c.name

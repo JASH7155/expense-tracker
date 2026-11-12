@@ -9,16 +9,18 @@ import { useCategories } from '@/lib/hooks'
 import { PAYMENT_METHODS, AUTOPAY_FREQUENCIES } from '@/lib/utils'
 import { Category, ExpenseWithCategory } from '@/types/database'
 import { syncAutopays } from '@/lib/autopay-sync'
+import AddCategoryModal from '@/components/AddCategoryModal'
 
 export default function EditExpensePage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
   const dateInputRef = useRef<HTMLInputElement>(null)
-  const { categories } = useCategories()
+  const { categories, refetch: refetchCategories } = useCategories()
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState('')
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
 
   const [form, setForm] = useState({
     amount: '',
@@ -187,16 +189,32 @@ export default function EditExpensePage() {
           {/* Category + Date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-300">Category</label>
+                <button
+                  type="button"
+                  onClick={() => setIsAddCategoryOpen(true)}
+                  className="text-xs text-zinc-400 hover:text-white transition-colors underline underline-offset-2 flex items-center gap-1"
+                >
+                  + Add Category
+                </button>
+              </div>
               <select
                 value={form.category_id}
-                onChange={(e) => setForm(f => ({ ...f, category_id: e.target.value }))}
+                onChange={(e) => {
+                  if (e.target.value === '__new__') {
+                    setIsAddCategoryOpen(true)
+                  } else {
+                    setForm(f => ({ ...f, category_id: e.target.value }))
+                  }
+                }}
                 className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-zinc-400"
               >
                 <option value="">Uncategorized</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
                 ))}
+                <option value="__new__">➕ Create New Category...</option>
               </select>
             </div>
             <div>
@@ -365,6 +383,15 @@ export default function EditExpensePage() {
           </div>
         </form>
       </div>
+
+      <AddCategoryModal
+        isOpen={isAddCategoryOpen}
+        onClose={() => setIsAddCategoryOpen(false)}
+        onCategoryCreated={(newCat) => {
+          refetchCategories()
+          setForm(f => ({ ...f, category_id: newCat.id }))
+        }}
+      />
     </div>
   )
 }

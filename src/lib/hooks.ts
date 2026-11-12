@@ -12,42 +12,43 @@ export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchCategories() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name')
-
-      if (!error && data && data.length > 0) {
-        setCategories(data)
-      } else {
-        // Fallback: If DB trigger hasn't populated categories yet, seed client-side
-        const seeded = DEFAULT_CATEGORIES.map((c, i) => ({
-          id: `default-cat-${i + 1}`,
-          user_id: user.id,
-          name: c.name,
-          icon: c.icon,
-          color: c.color,
-          is_default: true,
-          created_at: new Date().toISOString(),
-        }))
-        setCategories(seeded)
-      }
+  const fetchCategories = useCallback(async () => {
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       setLoading(false)
+      return
     }
 
-    fetchCategories()
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('name')
+
+    if (!error && data && data.length > 0) {
+      setCategories(data)
+    } else {
+      // Fallback: If DB trigger hasn't populated categories yet, seed client-side
+      const seeded = DEFAULT_CATEGORIES.map((c, i) => ({
+        id: `default-cat-${i + 1}`,
+        user_id: user.id,
+        name: c.name,
+        icon: c.icon,
+        color: c.color,
+        is_default: true,
+        created_at: new Date().toISOString(),
+      }))
+      setCategories(seeded)
+    }
+    setLoading(false)
   }, [])
 
-  return { categories, loading }
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
+
+  return { categories, loading, refetch: fetchCategories }
 }
 
 export function useExpenses(filters?: {

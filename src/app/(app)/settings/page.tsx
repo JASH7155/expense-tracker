@@ -3,14 +3,26 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/lib/hooks'
+import { useAuth, useCategories } from '@/lib/hooks'
+import AddCategoryModal from '@/components/AddCategoryModal'
 
 export default function SettingsPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const { categories, refetch: refetchCategories } = useCategories()
   const [exporting, setExporting] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
+  const [deletingCatId, setDeletingCatId] = useState<string | null>(null)
+
+  async function handleDeleteCategory(id: string, name: string) {
+    if (!confirm(`Delete category "${name}"? Existing expenses will become Uncategorized.`)) return
+    setDeletingCatId(id)
+    await supabase.from('categories').delete().eq('id', id)
+    await refetchCategories()
+    setDeletingCatId(null)
+  }
 
   async function handleExportAll() {
     setExporting(true)
@@ -72,12 +84,12 @@ export default function SettingsPage() {
       <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
         <h2 className="text-white font-semibold mb-4">Account</h2>
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+          <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-200 font-bold text-lg flex-shrink-0">
             {user?.email?.[0]?.toUpperCase() || 'U'}
           </div>
           <div>
             <p className="text-white font-medium">{user?.email || 'Loading...'}</p>
-            <p className="text-gray-500 text-sm">Signed in with Supabase</p>
+            <p className="text-zinc-500 text-sm">Signed in with Supabase</p>
           </div>
         </div>
         <button
@@ -86,6 +98,54 @@ export default function SettingsPage() {
         >
           🚪 Sign Out
         </button>
+      </div>
+
+      {/* Categories Management */}
+      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-white font-semibold">Categories</h2>
+            <p className="text-zinc-400 text-xs">Manage your default and custom expense categories</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsAddCategoryOpen(true)}
+            className="bg-zinc-100 hover:bg-white text-zinc-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
+          >
+            + Add Category
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {categories.map((cat) => (
+            <div
+              key={cat.id}
+              className="flex items-center justify-between p-2.5 bg-[#0d1117] border border-[#30363d] rounded-lg text-sm"
+            >
+              <div className="flex items-center gap-2.5 truncate mr-2">
+                <span className="text-lg">{cat.icon}</span>
+                <span className="text-zinc-200 truncate text-xs font-medium">{cat.name}</span>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {cat.is_default ? (
+                  <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded border border-zinc-700/50">
+                    Default
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                    disabled={deletingCatId === cat.id}
+                    className="text-zinc-500 hover:text-red-400 text-xs p-1 transition-colors"
+                    title="Delete category"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* App Info */}
@@ -148,6 +208,12 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      <AddCategoryModal
+        isOpen={isAddCategoryOpen}
+        onClose={() => setIsAddCategoryOpen(false)}
+        onCategoryCreated={() => refetchCategories()}
+      />
     </div>
   )
 }

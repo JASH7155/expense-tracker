@@ -12,7 +12,6 @@ export default function ExpensesPage() {
   const [paymentFilter, setPaymentFilter] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [autopayOnly, setAutopayOnly] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const { expenses, loading, refetch } = useExpenses({
@@ -24,12 +23,7 @@ export default function ExpensesPage() {
   })
   const { categories } = useCategories()
 
-  const displayedExpenses = useMemo(() => {
-    if (!autopayOnly) return expenses
-    return expenses.filter(e => e.is_autopay || e.is_recurring)
-  }, [expenses, autopayOnly])
-
-  const totalShown = useMemo(() => displayedExpenses.reduce((s, e) => s + e.amount, 0), [displayedExpenses])
+  const totalShown = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses])
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this expense?')) return
@@ -39,14 +33,15 @@ export default function ExpensesPage() {
     setDeleting(null)
   }
 
+  const hasActiveFilters = Boolean(search || categoryFilter || paymentFilter || startDate || endDate)
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Expenses</h1>
           <p className="text-gray-400 text-sm">
-            {displayedExpenses.length} transactions · {formatCurrency(totalShown)}
-            {autopayOnly && ' (Autopays filtered)'}
+            {expenses.length} transaction{expenses.length === 1 ? '' : 's'} · {formatCurrency(totalShown)}
           </p>
         </div>
         <Link
@@ -105,51 +100,33 @@ export default function ExpensesPage() {
           />
         </div>
 
-        {/* Quick Filter Chips */}
-        <div className="mt-3 flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-[#21262d]">
-          <div className="flex items-center gap-2">
+        {hasActiveFilters && (
+          <div className="mt-3 flex items-center justify-end pt-2 border-t border-[#21262d]">
             <button
-              type="button"
-              onClick={() => setAutopayOnly(!autopayOnly)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1.5 ${
-                autopayOnly
-                  ? 'bg-zinc-200 text-zinc-900 border-zinc-300 font-semibold shadow-sm'
-                  : 'bg-[#0d1117] text-gray-400 border-[#30363d] hover:text-white'
-              }`}
-            >
-              <span>⚡</span>
-              <span>Autopays &amp; Recurring Only</span>
-            </button>
-          </div>
-
-          {(search || categoryFilter || paymentFilter || startDate || endDate || autopayOnly) && (
-            <button
-              onClick={() => { setSearch(''); setCategoryFilter(''); setPaymentFilter(''); setStartDate(''); setEndDate(''); setAutopayOnly(false); }}
+              onClick={() => { setSearch(''); setCategoryFilter(''); setPaymentFilter(''); setStartDate(''); setEndDate(''); }}
               className="text-xs text-gray-400 hover:text-white"
             >
               ✕ Clear filters
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Expense List */}
       <div className="bg-[#161b22] border border-[#30363d] rounded-xl overflow-hidden">
         {loading ? (
           <div className="text-center py-16 text-gray-400">Loading...</div>
-        ) : displayedExpenses.length === 0 ? (
+        ) : expenses.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">💸</p>
-            <p className="text-gray-400">
-              {autopayOnly ? 'No autopays or recurring deductions found.' : 'No expenses found.'}
-            </p>
-            <Link href="/expenses/new" className="mt-3 inline-block text-blue-400 hover:text-blue-300 text-sm">
+            <p className="text-gray-400">No expenses found.</p>
+            <Link href="/expenses/new" className="mt-3 inline-block text-zinc-300 hover:text-white text-sm underline">
               Add your first expense →
             </Link>
           </div>
         ) : (
           <div className="divide-y divide-[#30363d]">
-            {displayedExpenses.map((expense) => {
+            {expenses.map((expense) => {
               const isRecurringOrAutopay = expense.is_autopay || expense.is_recurring
               const freq = (expense as any).recurring_frequency
 
