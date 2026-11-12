@@ -69,6 +69,7 @@ CREATE POLICY "Users can only access their own budgets"
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON public.expenses(user_id, date DESC);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON public.expenses(category_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_autopay ON public.expenses(user_id, is_autopay);
 CREATE INDEX IF NOT EXISTS idx_budgets_user_month ON public.budgets(user_id, month);
 
 -- Tailored trigger function for young professionals / living with parents
@@ -104,3 +105,26 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.seed_default_categories();
+
+-- Seed categories for any existing accounts created before this script
+INSERT INTO public.categories (user_id, name, icon, color, is_default)
+SELECT u.id, c.name, c.icon, c.color, true
+FROM auth.users u
+CROSS JOIN (
+  VALUES
+    ('Food Outings & Cafes', '🍔', '#f97316'),
+    ('Commute & Fuel', '🛵', '#3b82f6'),
+    ('Shopping & Tech', '🛍️', '#a855f7'),
+    ('Entertainment & Outings', '🎬', '#ec4899'),
+    ('Autopays & Subscriptions', '⚡', '#06b6d4'),
+    ('Savings & Investments', '💰', '#22c55e'),
+    ('Family Treats & Gifts', '🎁', '#f43f5e'),
+    ('Personal Care & Health', '💊', '#ef4444'),
+    ('Learning & Courses', '📚', '#f59e0b'),
+    ('Trips & Travel', '🌴', '#14b8a6'),
+    ('Home Contributions', '🏠', '#64748b'),
+    ('Miscellaneous', '🏷️', '#6b7280')
+) AS c(name, icon, color)
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.categories cat WHERE cat.user_id = u.id AND cat.name = c.name
+);
