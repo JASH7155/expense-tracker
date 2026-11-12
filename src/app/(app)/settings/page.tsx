@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth, useCategories } from '@/lib/hooks'
 import AddCategoryModal from '@/components/AddCategoryModal'
+import { cleanAndResetCategories } from '@/lib/cleanup-categories'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -15,6 +16,18 @@ export default function SettingsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
   const [deletingCatId, setDeletingCatId] = useState<string | null>(null)
+  const [resettingCats, setResettingCats] = useState(false)
+
+  async function handleResetCategories() {
+    if (!confirm('This will merge duplicate categories (e.g. "Food Outings" into "Food & Dining", "Transport" into "Commute & Travel") and leave only the 8 simple core categories. Existing expenses will be safely preserved. Continue?')) return
+    setResettingCats(true)
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (authUser) {
+      await cleanAndResetCategories(authUser.id)
+      await refetchCategories()
+    }
+    setResettingCats(false)
+  }
 
   async function handleDeleteCategory(id: string, name: string) {
     if (!confirm(`Delete category "${name}"? Existing expenses will become Uncategorized.`)) return
@@ -102,18 +115,31 @@ export default function SettingsPage() {
 
       {/* Categories Management */}
       <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-white font-semibold">Categories</h2>
+            <h2 className="text-white font-semibold">Categories ({categories.length})</h2>
             <p className="text-zinc-400 text-xs">Manage your default and custom expense categories</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsAddCategoryOpen(true)}
-            className="bg-zinc-100 hover:bg-white text-zinc-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
-          >
-            + Add Category
-          </button>
+          <div className="flex items-center gap-2">
+            {categories.length > 8 && (
+              <button
+                type="button"
+                onClick={handleResetCategories}
+                disabled={resettingCats}
+                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                title="Merge duplicates and clean up to 8 simple core categories"
+              >
+                {resettingCats ? 'Cleaning...' : '🧹 Clean to 8 Core'}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsAddCategoryOpen(true)}
+              className="bg-zinc-100 hover:bg-white text-zinc-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
+            >
+              + Add Category
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
