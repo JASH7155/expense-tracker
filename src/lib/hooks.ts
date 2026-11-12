@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 import { Category, Expense, Budget, ExpenseWithCategory } from '@/types/database'
 import { getCurrentMonthRange, DEFAULT_CATEGORIES } from './utils'
+import { syncAutopays } from './autopay-sync'
+
+let lastSyncTimestamp = 0
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -64,6 +67,17 @@ export function useExpenses(filters?: {
       setExpenses([])
       setLoading(false)
       return
+    }
+
+    // Auto-sync recurring autopays (e.g. daily Nov 1 -> today)
+    const now = Date.now()
+    if (now - lastSyncTimestamp > 10000) {
+      lastSyncTimestamp = now
+      try {
+        await syncAutopays(user.id)
+      } catch (err) {
+        console.warn('Autopay sync error:', err)
+      }
     }
 
     let query = supabase

@@ -79,8 +79,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 pathname === item.href
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30'
-                  : 'text-gray-400 hover:text-white hover:bg-[#21262d]'
+                  ? 'bg-zinc-800 text-white border border-zinc-700/80 shadow-sm'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
               }`}
             >
               <span className="text-base">{item.icon}</span>
@@ -91,17 +91,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="p-4 border-t border-[#30363d]">
           <div className="flex items-center gap-3 mb-3 px-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+            <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-200 text-xs font-bold">
               {user.email?.[0]?.toUpperCase() || 'U'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-white truncate">{user.email}</p>
-              <p className="text-xs text-gray-500">Authenticated</p>
+              <p className="text-xs text-zinc-500">Authenticated</p>
             </div>
           </div>
           <button
             onClick={handleSignOut}
-            className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            className="w-full text-left px-4 py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
           >
             🚪 Sign Out
           </button>
@@ -134,8 +134,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     pathname === item.href
-                      ? 'bg-blue-600/20 text-blue-400'
-                      : 'text-gray-400 hover:text-white hover:bg-[#21262d]'
+                      ? 'bg-zinc-800 text-white border border-zinc-700/80'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
                   }`}
                 >
                   <span>{item.icon}</span>

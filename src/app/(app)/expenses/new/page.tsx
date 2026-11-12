@@ -1,16 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useCategories } from '@/lib/hooks'
 import { categorizeExpense } from '@/lib/categorize'
 import { PAYMENT_METHODS, AUTOPAY_FREQUENCIES } from '@/lib/utils'
 import { Category } from '@/types/database'
+import { syncAutopays } from '@/lib/autopay-sync'
 
 export default function NewExpensePage() {
   const router = useRouter()
   const { categories } = useCategories()
+  const dateInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [suggestedCategory, setSuggestedCategory] = useState<Category | null>(null)
@@ -23,9 +25,31 @@ export default function NewExpensePage() {
     payment_method: 'upi',
     tags: '',
     is_autopay: false,
-    recurring_frequency: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly',
+    recurring_frequency: 'daily' as 'daily' | 'weekly' | 'monthly' | 'yearly',
     notes: '',
   })
+
+  function openDatePicker() {
+    try {
+      dateInputRef.current?.showPicker?.()
+      dateInputRef.current?.focus()
+    } catch {
+      dateInputRef.current?.focus()
+    }
+  }
+
+  function setQuickDate(offset: number | 'firstOfMonth') {
+    const d = new Date()
+    if (offset === 'firstOfMonth') {
+      d.setDate(1)
+    } else {
+      d.setDate(d.getDate() - offset)
+    }
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    setForm(f => ({ ...f, date: `${y}-${m}-${day}` }))
+  }
 
   function handleDescriptionChange(value: string) {
     setForm(f => ({ ...f, description: value }))
@@ -55,6 +79,10 @@ export default function NewExpensePage() {
       .map(t => t.trim().replace(/^#/, ''))
       .filter(Boolean)
 
+    if (form.is_autopay && !tags.includes('⚡ Autopay')) {
+      tags.push('⚡ Autopay')
+    }
+
     const { error: insertError } = await supabase.from('expenses').insert({
       user_id: user.id,
       amount: parseFloat(form.amount),
@@ -73,6 +101,14 @@ export default function NewExpensePage() {
       setError(insertError.message)
       setLoading(false)
     } else {
+      // If recurring autopay, immediately backfill any missing days up to today
+      if (form.is_autopay) {
+        try {
+          await syncAutopays(user.id)
+        } catch (syncErr) {
+          console.warn('Autopay sync error on submit:', syncErr)
+        }
+      }
       router.push('/expenses')
     }
   }
@@ -130,13 +166,13 @@ export default function NewExpensePage() {
           </div>
 
           {/* Category + Date */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
               <select
                 value={form.category_id}
                 onChange={(e) => setForm(f => ({ ...f, category_id: e.target.value }))}
-                className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-zinc-400"
               >
                 <option value="">Uncategorized</option>
                 {categories.map((c) => (
@@ -145,14 +181,52 @@ export default function NewExpensePage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Date *</label>
-              <input
-                type="date"
-                required
-                value={form.date}
-                onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))}
-                className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-              />
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-300">Date *</label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setQuickDate(0)}
+                    className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors border border-zinc-700/60"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickDate(1)}
+                    className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors border border-zinc-700/60"
+                  >
+                    Yesterday
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickDate('firstOfMonth')}
+                    className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors border border-zinc-700/60"
+                  >
+                    1st of Month
+                  </button>
+                </div>
+              </div>
+              <div className="relative">
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  required
+                  value={form.date}
+                  onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))}
+                  onClick={openDatePicker}
+                  style={{ colorScheme: 'dark' }}
+                  className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg pl-4 pr-10 py-3 text-white focus:outline-none focus:border-zinc-400 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={openDatePicker}
+                  title="Open Calendar"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1 transition-colors"
+                >
+                  📅
+                </button>
+              </div>
             </div>
           </div>
 
@@ -167,7 +241,7 @@ export default function NewExpensePage() {
                   onClick={() => setForm(f => ({ ...f, payment_method: m.value }))}
                   className={`p-2.5 rounded-lg border text-center transition-colors ${
                     form.payment_method === m.value
-                      ? 'border-blue-500 bg-blue-500/20 text-white'
+                      ? 'border-zinc-400 bg-zinc-800 text-white font-medium'
                       : 'border-[#30363d] text-gray-400 hover:border-gray-500'
                   }`}
                 >
@@ -187,20 +261,20 @@ export default function NewExpensePage() {
                   id="autopay"
                   checked={form.is_autopay}
                   onChange={(e) => setForm(f => ({ ...f, is_autopay: e.target.checked }))}
-                  className="w-4 h-4 accent-blue-500 rounded cursor-pointer"
+                  className="w-4 h-4 accent-zinc-200 rounded cursor-pointer"
                 />
-                <label htmlFor="autopay" className="text-sm font-medium text-white cursor-pointer">
-                  ⚡ Autopay / Recurring Deduction
+                <label htmlFor="autopay" className="text-sm font-medium text-white cursor-pointer flex items-center gap-1.5">
+                  <span className="text-amber-400">⚡</span> Autopay / Recurring Deduction
                 </label>
               </div>
               {form.is_autopay && (
-                <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-medium border border-blue-500/30">
-                  Recurring Active
+                <span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-medium border border-zinc-700">
+                  Active Recurring
                 </span>
               )}
             </div>
             <p className="text-xs text-gray-400 pl-7">
-              For expenses automatically deducted (daily commute, daily milk, monthly Netflix, SIP, gym, etc.)
+              Automatically creates expenses daily/monthly from the selected start date up to today with a <span className="text-zinc-300 font-mono">⚡ Autopay</span> tag.
             </p>
 
             {form.is_autopay && (
@@ -216,12 +290,12 @@ export default function NewExpensePage() {
                       onClick={() => setForm(f => ({ ...f, recurring_frequency: freq.value as any }))}
                       className={`p-2 rounded-lg border text-left text-xs transition-colors flex items-center gap-2 ${
                         form.recurring_frequency === freq.value
-                          ? 'border-blue-500 bg-blue-500/20 text-white'
+                          ? 'border-zinc-400 bg-zinc-800 text-white font-medium'
                           : 'border-[#30363d] text-gray-400 hover:border-gray-500'
                       }`}
                     >
                       <span>{freq.icon}</span>
-                      <span className="font-medium">{freq.label}</span>
+                      <span>{freq.label}</span>
                     </button>
                   ))}
                 </div>
@@ -262,16 +336,16 @@ export default function NewExpensePage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 bg-[#21262d] hover:bg-[#30363d] text-gray-300 py-3 rounded-lg font-medium transition-colors"
+              className="flex-1 bg-[#21262d] hover:bg-[#30363d] text-zinc-300 py-3 rounded-lg font-medium transition-colors border border-[#30363d]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white py-3 rounded-lg font-medium transition-colors"
+              className="flex-1 bg-zinc-100 hover:bg-white text-zinc-900 disabled:opacity-50 py-3 rounded-lg font-semibold transition-colors shadow-sm"
             >
-              {loading ? 'Saving...' : 'Save Expense 💾'}
+              {loading ? 'Saving...' : 'Save Expense'}
             </button>
           </div>
         </form>

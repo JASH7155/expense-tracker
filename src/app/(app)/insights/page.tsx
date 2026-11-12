@@ -11,10 +11,10 @@ function InsightCard({ icon, title, description, type }: {
   type: 'info' | 'warning' | 'success' | 'tip'
 }) {
   const styles = {
-    info: 'bg-blue-500/10 border-blue-500/30 text-blue-300',
-    warning: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300',
-    success: 'bg-green-500/10 border-green-500/30 text-green-300',
-    tip: 'bg-purple-500/10 border-purple-500/30 text-purple-300',
+    info: 'bg-[#161b22] border-[#30363d] text-zinc-200',
+    warning: 'bg-[#161b22] border-zinc-700 text-zinc-200',
+    success: 'bg-[#161b22] border-zinc-700 text-zinc-200',
+    tip: 'bg-[#161b22] border-[#30363d] text-zinc-200',
   }
   return (
     <div className={`border rounded-xl p-5 ${styles[type]}`}>

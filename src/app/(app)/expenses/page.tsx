@@ -51,7 +51,7 @@ export default function ExpensesPage() {
         </div>
         <Link
           href="/expenses/new"
-          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg font-medium text-sm transition-colors"
+          className="inline-flex items-center gap-2 bg-zinc-100 hover:bg-white text-zinc-900 px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm"
         >
           + Add Expense
         </Link>
@@ -65,12 +65,12 @@ export default function ExpensesPage() {
             placeholder="🔍 Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-zinc-500"
           />
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
           >
             <option value="">All Categories</option>
             {categories.map((c) => (
@@ -80,7 +80,7 @@ export default function ExpensesPage() {
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
           >
             <option value="">All Payment Methods</option>
             {PAYMENT_METHODS.map((m) => (
@@ -91,13 +91,17 @@ export default function ExpensesPage() {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            onClick={(e) => { try { (e.currentTarget as any).showPicker?.() } catch {} }}
+            style={{ colorScheme: 'dark' }}
+            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer"
           />
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            onClick={(e) => { try { (e.currentTarget as any).showPicker?.() } catch {} }}
+            style={{ colorScheme: 'dark' }}
+            className="bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500 cursor-pointer"
           />
         </div>
 
@@ -109,7 +113,7 @@ export default function ExpensesPage() {
               onClick={() => setAutopayOnly(!autopayOnly)}
               className={`text-xs px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1.5 ${
                 autopayOnly
-                  ? 'bg-blue-600 text-white border-blue-500 font-medium'
+                  ? 'bg-zinc-200 text-zinc-900 border-zinc-300 font-semibold shadow-sm'
                   : 'bg-[#0d1117] text-gray-400 border-[#30363d] hover:text-white'
               }`}
             >
@@ -160,17 +164,26 @@ export default function ExpensesPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-medium text-sm truncate">{expense.description}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-xs text-gray-500">{expense.categories?.name || 'Misc'}</span>
-                      <span className="text-gray-600">·</span>
-                      <span className="text-xs text-gray-500">{formatDate(expense.date)}</span>
-                      <span className="text-gray-600">·</span>
-                      <span className="text-xs text-gray-500 uppercase">{expense.payment_method}</span>
+                      <span className="text-xs text-zinc-400">{expense.categories?.name || 'Misc'}</span>
+                      <span className="text-zinc-600">·</span>
+                      <span className="text-xs text-zinc-400">{formatDate(expense.date)}</span>
+                      <span className="text-zinc-600">·</span>
+                      <span className="text-xs text-zinc-500 uppercase font-mono">{expense.payment_method}</span>
                       {isRecurringOrAutopay && (
-                        <span className="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30 flex items-center gap-1">
-                          <span>⚡</span>
-                          <span className="capitalize">{freq ? `${freq} Autopay` : 'Autopay'}</span>
+                        <span className="text-[11px] bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded border border-zinc-700/80 flex items-center gap-1 font-medium">
+                          <span className="text-amber-400">⚡</span>
+                          <span>
+                            {expense.tags?.includes('auto-generated')
+                              ? (freq ? `${freq} Auto` : 'Auto-deducted')
+                              : (freq ? `${freq} Autopay` : 'Autopay')}
+                          </span>
                         </span>
                       )}
+                      {expense.tags && expense.tags.filter(t => t !== 'auto-generated' && t !== '⚡ Autopay').map(t => (
+                        <span key={t} className="text-[11px] bg-zinc-800/60 text-zinc-400 px-1.5 py-0.2 rounded border border-zinc-700/50">
+                          #{t}
+                        </span>
+                      ))}
                     </div>
                   </div>
                   <p className="text-white font-semibold flex-shrink-0">{formatCurrency(expense.amount)}</p>

@@ -16,10 +16,12 @@ function StatCard({ title, value, sub, icon, color }: {
     <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
       <div className="flex items-start justify-between mb-3">
         <span className="text-2xl">{icon}</span>
-        <span className={`text-xs px-2 py-1 rounded-full ${color}`}>{sub}</span>
+        <span className="text-xs px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium">
+          {sub}
+        </span>
       </div>
-      <p className="text-gray-400 text-sm mb-1">{title}</p>
-      <p className="text-white text-2xl font-bold">{value}</p>
+      <p className="text-zinc-400 text-sm mb-1">{title}</p>
+      <p className="text-white text-2xl font-bold tracking-tight">{value}</p>
     </div>
   )
 }
@@ -98,7 +100,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/expenses/new"
-          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-lg font-medium text-sm transition-colors"
+          className="inline-flex items-center gap-2 bg-zinc-100 hover:bg-white text-zinc-900 px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm"
         >
           + Add Expense
         </Link>
@@ -111,28 +113,28 @@ export default function DashboardPage() {
           value={formatCurrency(stats.total)}
           icon="💸"
           sub={`${expenses.length} txns`}
-          color="text-blue-400 bg-blue-400/10"
+          color=""
         />
         <StatCard
           title="Today's Spend"
           value={formatCurrency(stats.todayTotal)}
           icon="📅"
           sub="Today"
-          color="text-green-400 bg-green-400/10"
+          color=""
         />
         <StatCard
           title="Autopays & Subscriptions"
           value={formatCurrency(stats.autopayTotal)}
           icon="⚡"
           sub={`${stats.autopays.length} active`}
-          color="text-cyan-400 bg-cyan-400/10"
+          color=""
         />
         <StatCard
           title="Budget Left"
           value={overallBudget ? formatCurrency(Math.max(overallBudget.amount - stats.total, 0)) : '—'}
           icon="🎯"
           sub={overallBudget ? `of ${formatCurrency(overallBudget.amount)}` : 'No budget set'}
-          color="text-purple-400 bg-purple-400/10"
+          color=""
         />
       </div>
 
@@ -141,15 +143,15 @@ export default function DashboardPage() {
         <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-lg">⚡</span>
+              <span className="text-amber-400 text-lg">⚡</span>
               <div>
                 <h2 className="text-white font-semibold text-sm">Autopays &amp; Recurring Commitments</h2>
-                <p className="text-gray-400 text-xs">
+                <p className="text-zinc-400 text-xs">
                   {stats.autopays.length} active recurring deduction{stats.autopays.length > 1 ? 's' : ''} (SIP, daily commute, OTT)
                 </p>
               </div>
             </div>
-            <Link href="/expenses" className="text-xs text-blue-400 hover:text-blue-300">
+            <Link href="/expenses" className="text-xs text-zinc-300 hover:text-white underline underline-offset-2">
               Manage in Expenses →
             </Link>
           </div>
@@ -157,11 +159,12 @@ export default function DashboardPage() {
             {stats.autopays.slice(0, 3).map((item) => {
               const freq = (item as any).recurring_frequency
               return (
-                <div key={item.id} className="bg-[#21262d] rounded-lg p-3 flex items-center justify-between">
+                <div key={item.id} className="bg-[#21262d] border border-zinc-800 rounded-lg p-3 flex items-center justify-between">
                   <div className="truncate mr-2">
                     <p className="text-white text-xs font-medium truncate">{item.description}</p>
-                    <p className="text-cyan-400 text-[11px] capitalize">
-                      {freq ? `${freq} Autopay` : 'Recurring'}
+                    <p className="text-zinc-400 text-[11px] capitalize flex items-center gap-1 mt-0.5">
+                      <span className="text-amber-400 text-[10px]">⚡</span>
+                      <span>{freq ? `${freq} Autopay` : 'Recurring'}</span>
                     </p>
                   </div>
                   <span className="text-white font-semibold text-xs whitespace-nowrap">
@@ -250,7 +253,7 @@ export default function DashboardPage() {
                   formatter={(value: any) => [formatCurrency(Number(value) || 0), 'Spent']}
                   contentStyle={{ backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: '8px', color: '#fff' }}
                 />
-                <Line type="monotone" dataKey="amount" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="amount" stroke="#e4e4e7" strokeWidth={2} dot={{ r: 3, fill: '#ffffff' }} />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -261,23 +264,29 @@ export default function DashboardPage() {
       <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-white font-semibold">Top Transactions This Month</h2>
-          <Link href="/expenses" className="text-blue-400 text-sm hover:text-blue-300">View all →</Link>
+          <Link href="/expenses" className="text-zinc-400 text-sm hover:text-white underline underline-offset-2">View all →</Link>
         </div>
         {topExpenses.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <p className="text-3xl mb-2">💸</p>
-            <p>No expenses yet. <Link href="/expenses/new" className="text-blue-400 hover:text-blue-300">Add your first one!</Link></p>
+            <p>No expenses yet. <Link href="/expenses/new" className="text-zinc-300 hover:text-white underline">Add your first one!</Link></p>
           </div>
         ) : (
           <div className="space-y-3">
             {topExpenses.map((expense) => (
-              <div key={expense.id} className="flex items-center gap-3 p-3 bg-[#21262d] rounded-lg">
+              <div key={expense.id} className="flex items-center gap-3 p-3 bg-[#21262d] border border-zinc-800/60 rounded-lg">
                 <span className="text-xl">{expense.categories?.icon || '🏷️'}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium truncate">{expense.description}</p>
-                  <p className="text-gray-500 text-xs">
-                    {expense.categories?.name || 'Misc'} · {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                    {(expense.is_autopay || expense.is_recurring) && ' · ⚡ Autopay'}
+                  <p className="text-zinc-400 text-xs flex items-center gap-1.5 mt-0.5">
+                    <span>{expense.categories?.name || 'Misc'}</span>
+                    <span className="text-zinc-600">·</span>
+                    <span>{new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                    {(expense.is_autopay || expense.is_recurring) && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                        ⚡ {expense.tags?.includes('auto-generated') ? 'Auto' : 'Autopay'}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <span className="text-white font-semibold text-sm">{formatCurrency(expense.amount)}</span>
