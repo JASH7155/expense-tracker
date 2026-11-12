@@ -120,3 +120,67 @@ CROSS JOIN (
 WHERE NOT EXISTS (
   SELECT 1 FROM public.categories cat WHERE cat.user_id = u.id AND cat.name = c.name
 );
+
+-- 8. Clean up and merge duplicate/legacy categories for all existing users
+DO $$
+DECLARE
+  u RECORD;
+  cat_food UUID;
+  cat_commute UUID;
+  cat_shopping UUID;
+  cat_entertainment UUID;
+  cat_subs UUID;
+  cat_invest UUID;
+  cat_family UUID;
+  cat_other UUID;
+BEGIN
+  FOR u IN SELECT id FROM auth.users LOOP
+    SELECT id INTO cat_food FROM public.categories WHERE user_id = u.id AND name = 'Food & Dining' LIMIT 1;
+    SELECT id INTO cat_commute FROM public.categories WHERE user_id = u.id AND name = 'Commute & Travel' LIMIT 1;
+    SELECT id INTO cat_shopping FROM public.categories WHERE user_id = u.id AND name = 'Shopping' LIMIT 1;
+    SELECT id INTO cat_entertainment FROM public.categories WHERE user_id = u.id AND name = 'Entertainment' LIMIT 1;
+    SELECT id INTO cat_subs FROM public.categories WHERE user_id = u.id AND name = 'Subscriptions' LIMIT 1;
+    SELECT id INTO cat_invest FROM public.categories WHERE user_id = u.id AND name = 'Investments & Savings' LIMIT 1;
+    SELECT id INTO cat_family FROM public.categories WHERE user_id = u.id AND name = 'Family & Gifts' LIMIT 1;
+    SELECT id INTO cat_other FROM public.categories WHERE user_id = u.id AND name = 'Other' LIMIT 1;
+
+    -- Safely reassign existing expenses
+    UPDATE public.expenses e SET category_id = cat_food FROM public.categories c
+    WHERE e.category_id = c.id AND c.user_id = u.id AND c.name IN ('Food Outings & Cafes');
+
+    UPDATE public.expenses e SET category_id = cat_commute FROM public.categories c
+    WHERE e.category_id = c.id AND c.user_id = u.id AND c.name IN ('Commute & Fuel', 'Transport', 'Travel', 'Trips & Travel');
+
+    UPDATE public.expenses e SET category_id = cat_shopping FROM public.categories c
+    WHERE e.category_id = c.id AND c.user_id = u.id AND c.name IN ('Shopping & Tech');
+
+    UPDATE public.expenses e SET category_id = cat_entertainment FROM public.categories c
+    WHERE e.category_id = c.id AND c.user_id = u.id AND c.name IN ('Entertainment & Outings');
+
+    UPDATE public.expenses e SET category_id = cat_subs FROM public.categories c
+    WHERE e.category_id = c.id AND c.user_id = u.id AND c.name IN ('Autopays & Subscriptions', 'Utilities');
+
+    UPDATE public.expenses e SET category_id = cat_invest FROM public.categories c
+    WHERE e.category_id = c.id AND c.user_id = u.id AND c.name IN ('Investments', 'Savings & Investments');
+
+    UPDATE public.expenses e SET category_id = cat_family FROM public.categories c
+    WHERE e.category_id = c.id AND c.user_id = u.id AND c.name IN ('Family Treats & Gifts', 'Gifts');
+
+    UPDATE public.expenses e SET category_id = cat_other FROM public.categories c
+    WHERE e.category_id = c.id AND c.user_id = u.id AND c.name IN ('Housing', 'Home Contributions', 'Health', 'Personal Care & Health', 'Education', 'Learning & Courses', 'Miscellaneous');
+
+    -- Delete redundant duplicate categories
+    DELETE FROM public.categories
+    WHERE user_id = u.id
+      AND name IN (
+        'Food Outings & Cafes',
+        'Commute & Fuel', 'Transport', 'Travel', 'Trips & Travel',
+        'Shopping & Tech',
+        'Entertainment & Outings',
+        'Autopays & Subscriptions', 'Utilities',
+        'Investments', 'Savings & Investments',
+        'Family Treats & Gifts', 'Gifts',
+        'Housing', 'Home Contributions', 'Health', 'Personal Care & Health', 'Education', 'Learning & Courses', 'Miscellaneous'
+      );
+  END LOOP;
+END $$;
