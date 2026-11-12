@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useCategories, useMonthlyExpenses, useBudgets } from '@/lib/hooks'
 import { formatCurrency, getMonthLabel } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { Target, Wallet, Check, AlertCircle, ArrowUpRight } from 'lucide-react'
 
 export default function BudgetsPage() {
   const { categories } = useCategories()
@@ -58,54 +59,97 @@ export default function BudgetsPage() {
 
   const overallBudget = getBudgetForCategory(null)
 
+  // Deduplicate categories by lowercase name for resilient UI
+  const displayCategories = useMemo(() => {
+    const seen = new Set<string>()
+    return categories.filter(c => {
+      const key = c.name.toLowerCase().trim()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }, [categories])
+
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Budgets</h1>
-          <p className="text-gray-400 text-sm">{monthLabel}</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
+            <Target className="w-6 h-6 text-zinc-900 dark:text-zinc-100" />
+            Budgets
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-0.5">
+            Set and track spending limits for {monthLabel}
+          </p>
         </div>
         <button
           onClick={saveBudgets}
           disabled={saving || Object.keys(budgetInputs).length === 0}
-          className="bg-zinc-100 hover:bg-white disabled:opacity-40 text-zinc-900 px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-colors bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 disabled:opacity-40 disabled:pointer-events-none shadow-sm cursor-pointer"
         >
-          {saving ? 'Saving...' : saved ? 'Saved' : 'Save Budgets'}
+          {saving ? (
+            'Saving...'
+          ) : saved ? (
+            <>
+              <Check className="w-4 h-4 text-emerald-400" />
+              Saved
+            </>
+          ) : (
+            'Save Budgets'
+          )}
         </button>
       </div>
 
       {/* Overall Budget */}
-      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-6">
-        <h2 className="text-white font-semibold mb-4">Overall Monthly Budget</h2>
-        <div className="flex gap-4 items-center">
-          <div className="flex-1">
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₹</span>
-              <input
-                type="number"
-                placeholder={overallBudget ? String(overallBudget.amount) : 'e.g. 30000'}
-                value={budgetInputs['overall'] || ''}
-                onChange={(e) => setBudgetInputs(p => ({ ...p, overall: e.target.value }))}
-                className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg pl-8 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-semibold"
-              />
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60 flex items-center justify-center">
+              <Wallet className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Overall Monthly Budget</h2>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Total expenditure cap for all categories</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-gray-400 text-sm">Spent so far</p>
-            <p className="text-white font-bold text-lg">{formatCurrency(totalSpent)}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Spent so far</p>
+            <p className="text-base sm:text-lg font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+              {formatCurrency(totalSpent)}
+            </p>
           </div>
         </div>
+
+        <div className="relative mb-4">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 font-mono text-sm">₹</span>
+          <input
+            type="number"
+            placeholder={overallBudget ? String(overallBudget.amount) : 'e.g. 25000'}
+            value={budgetInputs['overall'] || ''}
+            onChange={(e) => setBudgetInputs(p => ({ ...p, overall: e.target.value }))}
+            className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl pl-8 pr-4 py-2.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 text-sm font-medium tabular-nums"
+          />
+        </div>
+
         {overallBudget && (
-          <div className="mt-4">
-            <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-              <span>{formatCurrency(totalSpent)} of {formatCurrency(overallBudget.amount)}</span>
-              <span className={totalSpent > overallBudget.amount ? 'text-red-400' : 'text-green-400'}>
+          <div className="space-y-1.5 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
+            <div className="flex justify-between text-xs font-medium tabular-nums">
+              <span className="text-zinc-500 dark:text-zinc-400">
+                {formatCurrency(totalSpent)} of {formatCurrency(overallBudget.amount)}
+              </span>
+              <span className={totalSpent > overallBudget.amount ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}>
                 {((totalSpent / overallBudget.amount) * 100).toFixed(0)}% used
               </span>
             </div>
-            <div className="h-3 bg-[#21262d] rounded-full overflow-hidden">
+            <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all ${totalSpent > overallBudget.amount ? 'bg-red-500' : totalSpent > overallBudget.amount * 0.8 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                className={`h-full rounded-full transition-all duration-500 ${
+                  totalSpent > overallBudget.amount
+                    ? 'bg-rose-500'
+                    : totalSpent > overallBudget.amount * 0.8
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500'
+                }`}
                 style={{ width: `${Math.min((totalSpent / overallBudget.amount) * 100, 100)}%` }}
               />
             </div>
@@ -114,59 +158,73 @@ export default function BudgetsPage() {
       </div>
 
       {/* Per-Category Budgets */}
-      <div className="bg-[#161b22] border border-[#30363d] rounded-xl overflow-hidden">
-        <div className="p-5 border-b border-[#30363d]">
-          <h2 className="text-white font-semibold">Per-Category Budgets</h2>
-          <p className="text-gray-400 text-xs mt-0.5">Set limits for individual spending categories</p>
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl overflow-hidden shadow-sm">
+        <div className="p-5 border-b border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Per-Category Budgets</h2>
+            <p className="text-zinc-500 dark:text-zinc-400 text-xs mt-0.5">
+              Set limits for individual spending categories ({displayCategories.length} categories)
+            </p>
+          </div>
         </div>
-        <div className="divide-y divide-[#30363d]">
-          {categories.map((category) => {
+
+        <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+          {displayCategories.map((category) => {
             const spent = spendingByCategory[category.id] || 0
             const budget = getBudgetForCategory(category.id)
             const percent = budget ? Math.min((spent / budget.amount) * 100, 100) : null
+            const isExceeded = budget && spent > budget.amount
+            const isNearLimit = budget && spent > budget.amount * 0.8 && !isExceeded
 
             return (
-              <div key={category.id} className="p-4">
+              <div key={category.id} className="p-4 sm:p-5 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors">
                 <div className="flex items-center gap-3 mb-2">
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center text-lg"
-                    style={{ backgroundColor: `${category.color}20` }}
-                  >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-base bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 flex-shrink-0">
                     {category.icon}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm font-medium">{category.name}</p>
-                    <p className="text-gray-500 text-xs">Spent: {formatCurrency(spent)}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-zinc-900 dark:text-zinc-100 text-sm font-medium truncate">{category.name}</p>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-xs tabular-nums">
+                      Spent: <span className="font-medium text-zinc-700 dark:text-zinc-300">{formatCurrency(spent)}</span>
+                    </p>
                   </div>
-                  <div className="w-36">
+                  <div className="w-32 sm:w-40 flex-shrink-0">
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">₹</span>
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-xs font-mono">₹</span>
                       <input
                         type="number"
                         placeholder={budget ? String(budget.amount) : 'Set limit'}
                         value={budgetInputs[category.id] || ''}
                         onChange={(e) => setBudgetInputs(p => ({ ...p, [category.id]: e.target.value }))}
-                        className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg pl-6 pr-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
+                        className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl pl-6 pr-3 py-1.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 text-xs sm:text-sm font-medium tabular-nums"
                       />
                     </div>
                   </div>
                 </div>
+
                 {percent !== null && (
-                  <div>
-                    <div className="h-1.5 bg-[#21262d] rounded-full overflow-hidden">
+                  <div className="mt-2.5 space-y-1">
+                    <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${percent}%`,
-                          backgroundColor: percent >= 100 ? '#ef4444' : percent >= 80 ? '#eab308' : category.color,
-                        }}
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isExceeded
+                            ? 'bg-rose-500'
+                            : isNearLimit
+                            ? 'bg-amber-500'
+                            : 'bg-zinc-900 dark:bg-zinc-100'
+                        }`}
+                        style={{ width: `${percent}%` }}
                       />
                     </div>
-                    {percent >= 80 && (
-                      <p className={`text-xs mt-1 ${percent >= 100 ? 'text-red-400' : 'text-yellow-400'}`}>
-                        {percent >= 100 ? '🚨 Budget exceeded!' : '⚠️ Approaching limit'}
+                    {isExceeded ? (
+                      <p className="text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium">
+                        <AlertCircle className="w-3 h-3" /> Budget exceeded ({((spent / (budget?.amount || 1)) * 100).toFixed(0)}%)
                       </p>
-                    )}
+                    ) : isNearLimit ? (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
+                        <AlertCircle className="w-3 h-3" /> Approaching monthly limit ({percent.toFixed(0)}%)
+                      </p>
+                    ) : null}
                   </div>
                 )}
               </div>

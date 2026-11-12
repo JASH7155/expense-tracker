@@ -6,6 +6,18 @@ import { supabase } from '@/lib/supabase'
 import { useAuth, useCategories } from '@/lib/hooks'
 import AddCategoryModal from '@/components/AddCategoryModal'
 import { cleanAndResetCategories } from '@/lib/cleanup-categories'
+import {
+  Settings,
+  User,
+  LogOut,
+  Plus,
+  Trash2,
+  Sparkles,
+  Download,
+  AlertTriangle,
+  Layers,
+  Database,
+} from 'lucide-react'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -50,7 +62,7 @@ export default function SettingsPage() {
         e.date,
         `"${e.description.replace(/"/g, '""')}"`,
         e.amount,
-        (e.categories as any)?.name || 'Misc',
+        (e.categories as any)?.name || 'Uncategorized',
         e.payment_method,
         (e.tags || []).join(';'),
         `"${(e.notes || '').replace(/"/g, '""')}"`,
@@ -77,7 +89,7 @@ export default function SettingsPage() {
     }
     setDeleteConfirm('')
     setDeleteLoading(false)
-    alert('✅ All expenses deleted successfully.')
+    alert('All expense records deleted successfully.')
     window.location.reload()
   }
 
@@ -89,36 +101,47 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-gray-400 text-sm">Manage your account and data</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
+          <Settings className="w-6 h-6 text-zinc-900 dark:text-zinc-100" />
+          Settings
+        </h1>
+        <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-0.5">
+          Account credentials, category management, and ledger backups
+        </p>
       </div>
 
       {/* Account Info */}
-      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
-        <h2 className="text-white font-semibold mb-4">Account</h2>
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-200 font-bold text-lg flex-shrink-0">
-            {user?.email?.[0]?.toUpperCase() || 'U'}
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Account Profile</h2>
+        <div className="flex items-center gap-4 mb-5">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-zinc-100 font-semibold text-lg flex-shrink-0">
+            {user?.email?.[0]?.toUpperCase() || <User className="w-5 h-5 text-zinc-500" />}
           </div>
-          <div>
-            <p className="text-white font-medium">{user?.email || 'Loading...'}</p>
-            <p className="text-zinc-500 text-sm">Signed in with Supabase</p>
+          <div className="min-w-0">
+            <p className="text-zinc-900 dark:text-zinc-100 font-medium text-sm truncate">{user?.email || 'Authenticated User'}</p>
+            <p className="text-zinc-500 text-xs font-mono mt-0.5">Protected with Row-Level Security</p>
           </div>
         </div>
         <button
           onClick={handleSignOut}
-          className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100/60 dark:hover:bg-rose-950/40 text-xs sm:text-sm font-medium transition-colors cursor-pointer"
         >
-          🚪 Sign Out
+          <LogOut className="w-4 h-4" />
+          Sign Out of ExpenseIQ
         </button>
       </div>
 
       {/* Categories Management */}
-      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-white font-semibold">Categories ({categories.length})</h2>
-            <p className="text-zinc-400 text-xs">Manage your default and custom expense categories</p>
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-zinc-500" />
+              Categories ({categories.length})
+            </h2>
+            <p className="text-zinc-500 dark:text-zinc-400 text-xs mt-0.5">
+              Default system categories and custom user labels
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {categories.length > 8 && (
@@ -126,18 +149,20 @@ export default function SettingsPage() {
                 type="button"
                 onClick={handleResetCategories}
                 disabled={resettingCats}
-                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/80 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium transition-colors cursor-pointer"
                 title="Merge duplicates and clean up to 8 simple core categories"
               >
-                {resettingCats ? 'Cleaning...' : '🧹 Clean to 8 Core'}
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                {resettingCats ? 'Cleaning...' : 'Clean to 8 Core'}
               </button>
             )}
             <button
               type="button"
               onClick={() => setIsAddCategoryOpen(true)}
-              className="bg-zinc-100 hover:bg-white text-zinc-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 text-xs font-medium transition-colors shadow-sm cursor-pointer"
             >
-              + Add Category
+              <Plus className="w-3.5 h-3.5" />
+              Add Category
             </button>
           </div>
         </div>
@@ -146,26 +171,26 @@ export default function SettingsPage() {
           {categories.map((cat) => (
             <div
               key={cat.id}
-              className="flex items-center justify-between p-2.5 bg-[#0d1117] border border-[#30363d] rounded-lg text-sm"
+              className="flex items-center justify-between p-2.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800/80 rounded-xl text-xs"
             >
               <div className="flex items-center gap-2.5 truncate mr-2">
-                <span className="text-lg">{cat.icon}</span>
-                <span className="text-zinc-200 truncate text-xs font-medium">{cat.name}</span>
+                <span className="w-6 text-center text-sm">{cat.icon}</span>
+                <span className="text-zinc-900 dark:text-zinc-200 font-medium truncate">{cat.name}</span>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {cat.is_default ? (
-                  <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded border border-zinc-700/50">
-                    Default
+                  <span className="text-[10px] text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md font-mono">
+                    System
                   </span>
                 ) : (
                   <button
                     type="button"
                     onClick={() => handleDeleteCategory(cat.id, cat.name)}
                     disabled={deletingCatId === cat.id}
-                    className="text-zinc-500 hover:text-red-400 text-xs p-1 transition-colors"
+                    className="text-zinc-400 hover:text-rose-500 p-1 transition-colors cursor-pointer"
                     title="Delete category"
                   >
-                    🗑️
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
@@ -174,64 +199,74 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* App Info */}
-      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
-        <h2 className="text-white font-semibold mb-4">About ExpenseIQ</h2>
-        <div className="space-y-3 text-sm divide-y divide-[#30363d]">
+      {/* App Architecture & Specs */}
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
+          <Database className="w-4 h-4 text-zinc-500" />
+          System Information
+        </h2>
+        <div className="space-y-2.5 text-xs divide-y divide-zinc-100 dark:divide-zinc-800/60">
           {[
-            ['Version', '1.0.0'],
-            ['Currency', '₹ INR'],
-            ['Database', 'Supabase (PostgreSQL)'],
-            ['Hosting', 'Vercel (Free Tier)'],
-            ['Auth', 'Supabase Auth (Password & Magic Link)'],
+            ['Engine', 'Next.js 16 (App Router) + Tailwind CSS v4'],
+            ['Authentication', 'Supabase Auth (Multi-User Isolated RLS)'],
+            ['Default Currency', '₹ INR (Indian Rupee)'],
+            ['Autopay Engine', 'Daily & Monthly Auto-reconciliation'],
+            ['Theme Engine', 'Dual-mode (Dark / Light) with anti-flicker'],
           ].map(([label, value]) => (
             <div key={label} className="flex justify-between py-2 first:pt-0 last:pb-0">
-              <span className="text-gray-400">{label}</span>
-              <span className="text-white">{value}</span>
+              <span className="text-zinc-500 dark:text-zinc-400">{label}</span>
+              <span className="text-zinc-900 dark:text-zinc-200 font-medium font-mono">{value}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Data Management */}
-      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
-        <h2 className="text-white font-semibold mb-4">Data Management</h2>
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Data Management &amp; Danger Zone</h2>
 
         {/* Export */}
-        <div className="mb-5 flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <p className="text-gray-300 text-sm font-medium mb-1">Export all expenses</p>
-            <p className="text-gray-500 text-xs">Download a complete CSV of your expense history</p>
+            <p className="text-zinc-900 dark:text-zinc-200 text-xs sm:text-sm font-medium">Export All Expenses</p>
+            <p className="text-zinc-500 dark:text-zinc-400 text-xs">Download complete transaction ledger in CSV format</p>
           </div>
           <button
             onClick={handleExportAll}
             disabled={exporting}
-            className="bg-green-600/20 hover:bg-green-600/30 border border-green-600/40 text-green-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
           >
-            {exporting ? 'Exporting...' : '📥 Export All as CSV'}
+            <Download className="w-3.5 h-3.5" />
+            {exporting ? 'Exporting...' : 'Export CSV'}
           </button>
         </div>
 
         {/* Delete All */}
-        <div className="border-t border-[#30363d] pt-5">
-          <p className="text-red-400 text-sm font-medium mb-1">⚠️ Delete all expenses</p>
-          <p className="text-gray-500 text-xs mb-3">
-            This permanently deletes all your expense records. This action cannot be undone.
+        <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-5 space-y-3">
+          <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+            <AlertTriangle className="w-4 h-4" />
+            <p className="text-xs sm:text-sm font-semibold">Delete All Expenses</p>
+          </div>
+          <p className="text-zinc-500 dark:text-zinc-400 text-xs leading-relaxed">
+            Permanently purges all transaction records for your account. This action is irreversible.
           </p>
-          <input
-            type="text"
-            placeholder='Type "DELETE" to confirm'
-            value={deleteConfirm}
-            onChange={(e) => setDeleteConfirm(e.target.value)}
-            className="w-full bg-[#0d1117] border border-red-500/30 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-red-500 mb-3"
-          />
-          <button
-            onClick={handleDeleteAll}
-            disabled={deleteConfirm !== 'DELETE' || deleteLoading}
-            className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 disabled:opacity-30 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            {deleteLoading ? 'Deleting...' : '🗑️ Delete All Expenses'}
-          </button>
+          <div className="space-y-2">
+            <input
+              type="text"
+              placeholder='Type "DELETE" to confirm'
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-rose-200 dark:border-rose-900/40 rounded-xl px-3.5 py-2 text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-rose-500"
+            />
+            <button
+              onClick={handleDeleteAll}
+              disabled={deleteConfirm !== 'DELETE' || deleteLoading}
+              className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 disabled:opacity-40 text-xs sm:text-sm font-medium transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              {deleteLoading ? 'Purging records...' : 'Confirm Ledger Reset'}
+            </button>
+          </div>
         </div>
       </div>
 

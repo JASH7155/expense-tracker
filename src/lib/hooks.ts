@@ -5,8 +5,10 @@ import { supabase } from './supabase'
 import { Category, Expense, Budget, ExpenseWithCategory } from '@/types/database'
 import { getCurrentMonthRange, DEFAULT_CATEGORIES } from './utils'
 import { syncAutopays } from './autopay-sync'
+import { cleanAndResetCategories } from './cleanup-categories'
 
 let lastSyncTimestamp = 0
+let hasAttemptedCategoryCleanup = false
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -27,6 +29,49 @@ export function useCategories() {
       .order('name')
 
     if (!error && data && data.length > 0) {
+      // Check if user has legacy categories or duplicate default names
+      const legacyKeywords = [
+        'food outings & cafes',
+        'commute & fuel',
+        'shopping & tech',
+        'entertainment & outings',
+        'autopays & subscriptions',
+        'family treats & gifts',
+        'personal care & health',
+        'learning & courses',
+        'trips & travel',
+        'home contributions',
+        'transport',
+        'travel',
+        'utilities',
+        'investments',
+        'housing',
+        'health',
+        'education',
+        'miscellaneous',
+        'gifts',
+      ]
+
+      const hasLegacyOrTooMany =
+        data.some(c => legacyKeywords.includes(c.name.toLowerCase().trim())) ||
+        (data.length > 10 && !hasAttemptedCategoryCleanup)
+
+      if (hasLegacyOrTooMany && !hasAttemptedCategoryCleanup) {
+        hasAttemptedCategoryCleanup = true
+        await cleanAndResetCategories(user.id)
+        const { data: cleanData } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('name')
+
+        if (cleanData && cleanData.length > 0) {
+          setCategories(cleanData)
+          setLoading(false)
+          return
+        }
+      }
+
       setCategories(data)
     } else {
       // Fallback: If DB trigger hasn't populated categories yet, seed client-side

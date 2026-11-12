@@ -6,10 +6,35 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useCategories } from '@/lib/hooks'
-import { PAYMENT_METHODS, AUTOPAY_FREQUENCIES } from '@/lib/utils'
-import { Category, ExpenseWithCategory } from '@/types/database'
+import { ExpenseWithCategory } from '@/types/database'
 import { syncAutopays } from '@/lib/autopay-sync'
 import AddCategoryModal from '@/components/AddCategoryModal'
+import {
+  ArrowLeft,
+  Calendar,
+  Zap,
+  Plus,
+  Smartphone,
+  CreditCard,
+  Banknote,
+  Building2,
+  HelpCircle,
+} from 'lucide-react'
+
+const PAYMENT_OPTIONS = [
+  { value: 'upi', label: 'UPI', Icon: Smartphone },
+  { value: 'card', label: 'Card', Icon: CreditCard },
+  { value: 'cash', label: 'Cash', Icon: Banknote },
+  { value: 'netbanking', label: 'Net Banking', Icon: Building2 },
+  { value: 'other', label: 'Other', Icon: HelpCircle },
+] as const
+
+const FREQUENCY_OPTIONS = [
+  { value: 'daily', label: 'Daily (Every day)', sub: 'Generates automatically every day' },
+  { value: 'monthly', label: 'Monthly (SIP / EMI)', sub: 'Generates once per month' },
+  { value: 'weekly', label: 'Weekly', sub: 'Generates every 7 days' },
+  { value: 'yearly', label: 'Yearly', sub: 'Annual renewal' },
+] as const
 
 export default function EditExpensePage() {
   const router = useRouter()
@@ -137,31 +162,50 @@ export default function EditExpensePage() {
 
   if (fetching) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400">Loading expense...</div>
+      <div className="flex items-center justify-center h-64 text-xs font-mono text-zinc-500">
+        Loading transaction details...
+      </div>
     )
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <button onClick={() => router.back()} className="text-gray-400 hover:text-white text-sm mb-4 flex items-center gap-1">
-          ← Back
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Expenses
         </button>
-        <h1 className="text-2xl font-bold text-white">Edit Expense</h1>
-        <p className="text-gray-400 text-sm">Update transaction details</p>
       </div>
 
-      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-6">
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-6 sm:p-8 shadow-sm">
+        <div className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Edit Expense
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-0.5">
+            Modify details, category, or recurring rules for this entry
+          </p>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">{error}</div>
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-medium">
+              {error}
+            </div>
           )}
 
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Amount (₹) *</label>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+              Amount (₹) *
+            </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₹</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 font-mono text-lg font-semibold">
+                ₹
+              </span>
               <input
                 type="number"
                 step="0.01"
@@ -169,34 +213,39 @@ export default function EditExpensePage() {
                 required
                 value={form.amount}
                 onChange={(e) => setForm(f => ({ ...f, amount: e.target.value }))}
-                className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg pl-8 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 text-lg font-semibold"
+                placeholder="0.00"
+                className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl pl-9 pr-4 py-3 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 text-xl font-semibold tabular-nums"
               />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Description *</label>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+              Description *
+            </label>
             <input
               type="text"
               required
               value={form.description}
               onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
-              className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              placeholder="e.g. Swiggy lunch, Metro pass, Netflix autopay"
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 text-sm"
             />
           </div>
 
           {/* Category + Date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-300">Category</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Category</label>
                 <button
                   type="button"
                   onClick={() => setIsAddCategoryOpen(true)}
-                  className="text-xs text-zinc-400 hover:text-white transition-colors underline underline-offset-2 flex items-center gap-1"
+                  className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors flex items-center gap-0.5 font-medium cursor-pointer"
                 >
-                  + Add Category
+                  <Plus className="w-3 h-3" />
+                  New
                 </button>
               </div>
               <select
@@ -208,39 +257,40 @@ export default function EditExpensePage() {
                     setForm(f => ({ ...f, category_id: e.target.value }))
                   }
                 }}
-                className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-zinc-400"
+                className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600"
               >
                 <option value="">Uncategorized</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
                 ))}
-                <option value="__new__">➕ Create New Category...</option>
+                <option value="__new__">+ Create New Category...</option>
               </select>
             </div>
+
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-300">Date *</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Date *</label>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setQuickDate(0)}
-                    className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors border border-zinc-700/60"
+                    className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-medium transition-colors cursor-pointer"
                   >
                     Today
                   </button>
                   <button
                     type="button"
                     onClick={() => setQuickDate(1)}
-                    className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors border border-zinc-700/60"
+                    className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-medium transition-colors cursor-pointer"
                   >
                     Yesterday
                   </button>
                   <button
                     type="button"
                     onClick={() => setQuickDate('firstOfMonth')}
-                    className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors border border-zinc-700/60"
+                    className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-medium transition-colors cursor-pointer"
                   >
-                    1st of Month
+                    1st
                   </button>
                 </div>
               </div>
@@ -252,16 +302,15 @@ export default function EditExpensePage() {
                   value={form.date}
                   onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))}
                   onClick={openDatePicker}
-                  style={{ colorScheme: 'dark' }}
-                  className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg pl-4 pr-10 py-3 text-white focus:outline-none focus:border-zinc-400 cursor-pointer"
+                  className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl pl-3.5 pr-10 py-2.5 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 cursor-pointer"
                 />
                 <button
                   type="button"
                   onClick={openDatePicker}
                   title="Open Calendar"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors p-1 cursor-pointer"
                 >
-                  📅
+                  <Calendar className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -269,69 +318,83 @@ export default function EditExpensePage() {
 
           {/* Payment Method */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Payment Method</label>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+              Payment Method
+            </label>
             <div className="grid grid-cols-5 gap-2">
-              {PAYMENT_METHODS.map((m) => (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => setForm(f => ({ ...f, payment_method: m.value }))}
-                  className={`p-2.5 rounded-lg border text-center transition-colors ${
-                    form.payment_method === m.value
-                      ? 'border-zinc-400 bg-zinc-800 text-white font-medium'
-                      : 'border-[#30363d] text-gray-400 hover:border-gray-500'
-                  }`}
-                >
-                  <div className="text-lg">{m.icon}</div>
-                  <div className="text-xs mt-1">{m.label}</div>
-                </button>
-              ))}
+              {PAYMENT_OPTIONS.map(({ value, label, Icon }) => {
+                const isSelected = form.payment_method === value
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, payment_method: value }))}
+                    className={`py-2.5 px-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                      isSelected
+                        ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 shadow-sm'
+                        : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="text-[11px] font-medium leading-tight">{label}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
-          {/* Autopay / Recurring Section */}
-          <div className="p-4 bg-[#0d1117] rounded-xl border border-[#30363d] space-y-3">
+          {/* Autopay / Recurring Deduction */}
+          <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   id="autopay"
                   checked={form.is_autopay}
                   onChange={(e) => setForm(f => ({ ...f, is_autopay: e.target.checked }))}
-                  className="w-4 h-4 accent-zinc-200 rounded cursor-pointer"
+                  className="w-4 h-4 rounded text-zinc-900 dark:text-zinc-100 focus:ring-0 cursor-pointer"
                 />
-                <label htmlFor="autopay" className="text-sm font-medium text-white cursor-pointer flex items-center gap-1.5">
-                  <span className="text-amber-400">⚡</span> Autopay / Recurring Deduction
-                </label>
-              </div>
+                <span className="text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  Autopay / Recurring Schedule
+                </span>
+              </label>
               {form.is_autopay && (
-                <span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-medium border border-zinc-700">
-                  Active Recurring
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold tracking-wider">
+                  Active Autopay
                 </span>
               )}
             </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed pl-6">
+              When enabled, ExpenseIQ automatically posts deductions daily or monthly up to today. Each auto-posted transaction carries a permanent <span className="font-mono text-zinc-700 dark:text-zinc-300">⚡ Autopay</span> badge.
+            </p>
 
             {form.is_autopay && (
-              <div className="pt-2 border-t border-[#21262d] pl-7 space-y-2">
-                <label className="block text-xs font-medium text-gray-300">
-                  Autopay Frequency
+              <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 pl-6 space-y-2">
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                  Deduction Frequency
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {AUTOPAY_FREQUENCIES.map((freq) => (
-                    <button
-                      key={freq.value}
-                      type="button"
-                      onClick={() => setForm(f => ({ ...f, recurring_frequency: freq.value as any }))}
-                      className={`p-2 rounded-lg border text-left text-xs transition-colors flex items-center gap-2 ${
-                        form.recurring_frequency === freq.value
-                          ? 'border-zinc-400 bg-zinc-800 text-white font-medium'
-                          : 'border-[#30363d] text-gray-400 hover:border-gray-500'
-                      }`}
-                    >
-                      <span>{freq.icon}</span>
-                      <span>{freq.label}</span>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {FREQUENCY_OPTIONS.map((freq) => {
+                    const isSelected = form.recurring_frequency === freq.value
+                    return (
+                      <button
+                        key={freq.value}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, recurring_frequency: freq.value as any }))}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-zinc-900 bg-white dark:bg-[#0e1017] dark:border-zinc-100 shadow-sm'
+                            : 'border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
+                        }`}
+                      >
+                        <p className={`text-xs font-semibold ${isSelected ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                          {freq.label}
+                        </p>
+                        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">{freq.sub}</p>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -339,46 +402,47 @@ export default function EditExpensePage() {
 
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Tags <span className="text-gray-500">(comma separated)</span>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+              Tags <span className="text-zinc-400 dark:text-zinc-500 font-normal">(comma-separated)</span>
             </label>
             <input
               type="text"
               value={form.tags}
               onChange={(e) => setForm(f => ({ ...f, tags: e.target.value }))}
-              placeholder="#weekend, #work"
-              className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-zinc-500"
+              placeholder="e.g. coffee, weekend, autopay"
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 text-sm"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Notes <span className="text-gray-500">(optional)</span>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+              Notes <span className="text-zinc-400 dark:text-zinc-500 font-normal">(optional)</span>
             </label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
               rows={2}
-              className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-zinc-500 resize-none"
+              placeholder="Reference number, bill notes, or remarks..."
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 text-sm resize-none"
             />
           </div>
 
-          {/* Submit */}
-          <div className="flex gap-3 pt-2">
+          {/* Actions */}
+          <div className="flex gap-3 pt-3">
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 bg-[#21262d] hover:bg-[#30363d] text-zinc-300 py-3 rounded-lg font-medium transition-colors border border-[#30363d]"
+              className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 font-medium text-xs sm:text-sm transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-zinc-100 hover:bg-white text-zinc-900 disabled:opacity-50 py-3 rounded-lg font-semibold transition-colors shadow-sm"
+              className="flex-1 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 font-medium text-xs sm:text-sm transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
             >
-              {loading ? 'Saving...' : 'Update Expense'}
+              {loading ? 'Saving Changes...' : 'Save Changes'}
             </button>
           </div>
         </form>

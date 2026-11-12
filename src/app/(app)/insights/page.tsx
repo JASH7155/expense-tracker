@@ -3,26 +3,71 @@
 import { useMemo } from 'react'
 import { useMonthlyExpenses, useBudgets } from '@/lib/hooks'
 import { formatCurrency, getMonthLabel } from '@/lib/utils'
+import {
+  Sparkles,
+  Home,
+  Zap,
+  Coffee,
+  Calendar,
+  CheckCircle2,
+  AlertTriangle,
+  TrendingUp,
+  Smartphone,
+  Coins,
+  Search,
+  PieChart,
+} from 'lucide-react'
 
-function InsightCard({ icon, title, description, type }: {
-  icon: string
+function InsightCard({
+  Icon,
+  title,
+  description,
+  type,
+}: {
+  Icon: React.ComponentType<{ className?: string }>
   title: string
   description: string
   type: 'info' | 'warning' | 'success' | 'tip'
 }) {
-  const styles = {
-    info: 'bg-[#161b22] border-[#30363d] text-zinc-200',
-    warning: 'bg-[#161b22] border-zinc-700 text-zinc-200',
-    success: 'bg-[#161b22] border-zinc-700 text-zinc-200',
-    tip: 'bg-[#161b22] border-[#30363d] text-zinc-200',
+  const typeConfigs = {
+    info: {
+      badge: 'Analysis',
+      badgeClass: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+      iconContainer: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    },
+    warning: {
+      badge: 'Attention',
+      badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+      iconContainer: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+    },
+    success: {
+      badge: 'Positive',
+      badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+      iconContainer: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    },
+    tip: {
+      badge: 'Suggestion',
+      badgeClass: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+      iconContainer: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+    },
   }
+
+  const cfg = typeConfigs[type]
+
   return (
-    <div className={`border rounded-xl p-5 ${styles[type]}`}>
-      <div className="flex gap-3">
-        <span className="text-2xl flex-shrink-0">{icon}</span>
-        <div>
-          <p className="font-semibold mb-1">{title}</p>
-          <p className="text-sm opacity-80 leading-relaxed">{description}</p>
+    <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+      <div className="flex items-start gap-4">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${cfg.iconContainer}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{title}</h3>
+            <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border font-semibold ${cfg.badgeClass}`}>
+              {cfg.badge}
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{description}</p>
         </div>
       </div>
     </div>
@@ -36,7 +81,7 @@ export default function InsightsPage() {
 
   const insights = useMemo(() => {
     const results: Array<{
-      icon: string
+      Icon: React.ComponentType<{ className?: string }>
       title: string
       description: string
       type: 'info' | 'warning' | 'success' | 'tip'
@@ -48,7 +93,7 @@ export default function InsightsPage() {
     const avgDaily = totalSpent / (now.getDate() || 1)
 
     // Category analysis
-    const byCategory: Record<string, { name: string; total: number; count: number; icon: string }> = {}
+    const byCategory: Record<string, { name: string; total: number; count: number }> = {}
     for (const exp of expenses) {
       const key = exp.category_id || 'misc'
       if (!byCategory[key]) {
@@ -56,7 +101,6 @@ export default function InsightsPage() {
           name: exp.categories?.name || 'Misc',
           total: 0,
           count: 0,
-          icon: exp.categories?.icon || '🏷️',
         }
       }
       byCategory[key].total += exp.amount
@@ -64,12 +108,12 @@ export default function InsightsPage() {
     }
 
     const topCategory = Object.values(byCategory).sort((a, b) => b.total - a.total)[0]
-    if (topCategory) {
+    if (topCategory && totalSpent > 0) {
       const percent = ((topCategory.total / totalSpent) * 100).toFixed(0)
       results.push({
-        icon: topCategory.icon,
+        Icon: PieChart,
         title: `${topCategory.name} is your biggest spend`,
-        description: `You've spent ${formatCurrency(topCategory.total)} on ${topCategory.name} this month — that's ${percent}% of your total spending.`,
+        description: `You've spent ${formatCurrency(topCategory.total)} on ${topCategory.name} this month — that's ${percent}% of your total expenditure.`,
         type: parseInt(percent) > 40 ? 'warning' : 'info',
       })
     }
@@ -85,13 +129,12 @@ export default function InsightsPage() {
       return name.includes('saving') || name.includes('invest') || e.description.toLowerCase().includes('sip') || e.description.toLowerCase().includes('mutual fund')
     })
     const totalSavings = savingsExp.reduce((s, e) => s + e.amount, 0)
-    const savingsRate = totalSpent > 0 ? Math.round((totalSavings / (totalSpent + totalSavings)) * 100) : 0
 
     if (rentOrBills.length === 0) {
       results.push({
-        icon: '🏡',
-        title: 'Living with Parents Advantage',
-        description: `Zero rent & zero household utility bills detected! This gives you a superpower to direct 40–50%+ of your income into Savings, SIPs, or Emergency Funds. ${totalSavings > 0 ? `You've allocated ${formatCurrency(totalSavings)} to investments this month.` : 'Tip: Set up an auto-debit SIP right after payday!'}`,
+        Icon: Home,
+        title: 'Zero Rent & Utilities Advantage',
+        description: `No rent or household utility bills recorded! This allows you to comfortably allocate 40–50%+ of your income into Savings, SIPs, or emergency reserves. ${totalSavings > 0 ? `You've allocated ${formatCurrency(totalSavings)} to investments this month.` : 'Setting up an auto-debit SIP right after payday makes building wealth automatic.'}`,
         type: 'success',
       })
     }
@@ -106,9 +149,9 @@ export default function InsightsPage() {
       const projectedDaily = dailySum * 30
 
       results.push({
-        icon: '⚡',
-        title: `${autopayExpenses.length} Autopays & Recurring Deductions`,
-        description: `You have ${dailyAutopays.length} daily autopays (~${formatCurrency(dailySum)}/day, projecting to ~${formatCurrency(projectedDaily)}/month) and ${monthlyAutopays.length} monthly autopays (${formatCurrency(monthlySum)}/month). Keeping track prevents silent subscription creep.`,
+        Icon: Zap,
+        title: `${autopayExpenses.length} Active Autopays Tracked`,
+        description: `You have ${dailyAutopays.length} daily autopays (~${formatCurrency(dailySum)}/day, projecting to ~${formatCurrency(projectedDaily)}/month) and ${monthlyAutopays.length} monthly autopays (${formatCurrency(monthlySum)}/month). Systematic tracking prevents silent recurring budget creep.`,
         type: 'info',
       })
     }
@@ -122,9 +165,9 @@ export default function InsightsPage() {
     if (foodDeliveryExpenses.length >= 3) {
       const totalFoodDelivery = foodDeliveryExpenses.reduce((s, e) => s + e.amount, 0)
       results.push({
-        icon: '☕',
-        title: `${foodDeliveryExpenses.length} Cafe & Food Outings (${formatCurrency(totalFoodDelivery)})`,
-        description: `Since regular home meals are taken care of by family, cafe hangs and delivery orders are purely discretionary. Enjoying them guilt-free works best when capped to a set monthly budget.`,
+        Icon: Coffee,
+        title: `${foodDeliveryExpenses.length} Outings & Delivery Orders (${formatCurrency(totalFoodDelivery)})`,
+        description: `Discretionary dining and coffee runs recorded so far. Enjoying these without hesitation works best when governed by an explicit monthly dining budget.`,
         type: 'tip',
       })
     }
@@ -141,9 +184,9 @@ export default function InsightsPage() {
 
     if (avgWeekendDaily > avgWeekdayDaily * 1.5 && weekendSpend > 0) {
       results.push({
-        icon: '📅',
-        title: 'You spend more on weekends',
-        description: `Weekend avg: ${formatCurrency(Math.round(avgWeekendDaily))}/day vs ${formatCurrency(Math.round(avgWeekdayDaily))}/day on weekdays. Plan weekend activities with a budget in mind.`,
+        Icon: Calendar,
+        title: 'Elevated Weekend Spending Pattern',
+        description: `Weekend average is ${formatCurrency(Math.round(avgWeekendDaily))}/day vs ${formatCurrency(Math.round(avgWeekdayDaily))}/day on weekdays. Consider setting a weekend spending threshold.`,
         type: 'warning',
       })
     }
@@ -158,16 +201,16 @@ export default function InsightsPage() {
 
       if (budgetLeft > 0) {
         results.push({
-          icon: '✅',
-          title: 'On track with your budget',
-          description: `You have ${formatCurrency(budgetLeft)} left for ${daysLeft} more days. That's ${formatCurrency(Math.round(dailyBudgetLeft))}/day you can comfortably spend.`,
+          Icon: CheckCircle2,
+          title: 'Within Monthly Budget Limits',
+          description: `You have ${formatCurrency(budgetLeft)} remaining for ${daysLeft} more days (~${formatCurrency(Math.round(dailyBudgetLeft))}/day allowance).`,
           type: 'success',
         })
       } else {
         results.push({
-          icon: '🚨',
-          title: 'Monthly budget exceeded!',
-          description: `You've exceeded your ${formatCurrency(overallBudget.amount)} budget by ${formatCurrency(Math.abs(budgetLeft))}. Try cutting discretionary spending for the rest of the month.`,
+          Icon: AlertTriangle,
+          title: 'Monthly Budget Limit Reached',
+          description: `Spending exceeds the planned ${formatCurrency(overallBudget.amount)} budget by ${formatCurrency(Math.abs(budgetLeft))}. Restricting non-essential debits is recommended.`,
           type: 'warning',
         })
       }
@@ -175,30 +218,30 @@ export default function InsightsPage() {
 
     // Daily average
     results.push({
-      icon: '📊',
-      title: `Daily average: ${formatCurrency(Math.round(avgDaily))}`,
-      description: `You're spending ~${formatCurrency(Math.round(avgDaily))}/day this month. At this pace, you'll end the month at ~${formatCurrency(Math.round(avgDaily * 30))}.`,
+      Icon: TrendingUp,
+      title: `Current Burn Rate: ${formatCurrency(Math.round(avgDaily))}/day`,
+      description: `At this current pace, projected total monthly spending will conclude near ${formatCurrency(Math.round(avgDaily * 30))}.`,
       type: 'info',
     })
 
     // Largest single transaction
     const highestExpense = [...expenses].sort((a, b) => b.amount - a.amount)[0]
-    if (highestExpense && highestExpense.amount > avgDaily * 5) {
+    if (highestExpense && highestExpense.amount > avgDaily * 3 && totalSpent > 0) {
       results.push({
-        icon: '💰',
-        title: `Largest transaction: "${highestExpense.description}"`,
-        description: `Your biggest expense was ${formatCurrency(highestExpense.amount)} — ${((highestExpense.amount / totalSpent) * 100).toFixed(0)}% of your total monthly spend.`,
+        Icon: Coins,
+        title: `Single Largest Debit: "${highestExpense.description}"`,
+        description: `${formatCurrency(highestExpense.amount)} representing ${((highestExpense.amount / totalSpent) * 100).toFixed(0)}% of your total monthly expense.`,
         type: 'info',
       })
     }
 
     // UPI heavy usage tip
     const upiExpenses = expenses.filter(e => e.payment_method === 'upi')
-    if (upiExpenses.length > expenses.length * 0.8) {
+    if (upiExpenses.length > expenses.length * 0.75 && expenses.length >= 4) {
       results.push({
-        icon: '📱',
-        title: 'You mostly pay via UPI',
-        description: `${upiExpenses.length} of your ${expenses.length} transactions are UPI. Great for tracking — keep at it! Check your UPI app statement monthly to cross-verify.`,
+        Icon: Smartphone,
+        title: 'UPI Primary Channel',
+        description: `${upiExpenses.length} of ${expenses.length} transactions processed via instant UPI. Keep transaction descriptions descriptive for seamless monthly accounting.`,
         type: 'tip',
       })
     }
@@ -212,44 +255,55 @@ export default function InsightsPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Insights</h1>
-        <p className="text-gray-400 text-sm">{monthLabel} · {formatCurrency(totalSpent)} spent</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
+          <Sparkles className="w-6 h-6 text-zinc-900 dark:text-zinc-100" />
+          Smart Insights
+        </h1>
+        <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-0.5">
+          {monthLabel} · <span className="tabular-nums font-medium text-zinc-700 dark:text-zinc-300">{formatCurrency(totalSpent)}</span> total expenditure
+        </p>
       </div>
 
       {expenses.length === 0 ? (
-        <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-12 text-center">
-          <p className="text-4xl mb-3">🔍</p>
-          <p className="text-white font-medium mb-1">No data to analyze yet</p>
-          <p className="text-gray-400 text-sm">Add some expenses and come back for personalized insights!</p>
+        <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-12 text-center shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-3">
+            <Search className="w-6 h-6 text-zinc-400" />
+          </div>
+          <p className="text-zinc-900 dark:text-zinc-100 font-semibold text-sm mb-1">No transaction patterns yet</p>
+          <p className="text-zinc-500 dark:text-zinc-400 text-xs max-w-sm mx-auto">
+            Log transactions to unlock intelligent cash flow analytics and personalized budget tracking.
+          </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           {insights.map((insight, i) => (
             <InsightCard key={i} {...insight} />
           ))}
         </div>
       )}
 
-      {/* Summary stats */}
+      {/* Month at a Glance */}
       {expenses.length > 0 && (
-        <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
-          <h2 className="text-white font-semibold mb-4">Month at a Glance</h2>
-          <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Month at a Glance</h2>
+          <div className="grid grid-cols-3 gap-4 text-center divide-x divide-zinc-100 dark:divide-zinc-800/60">
             <div>
-              <p className="text-2xl font-bold text-white">{expenses.length}</p>
-              <p className="text-gray-400 text-xs mt-1">Transactions</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">
-                {formatCurrency(Math.round(totalSpent / now.getDate()))}
+              <p className="text-xl sm:text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+                {expenses.length}
               </p>
-              <p className="text-gray-400 text-xs mt-1">Daily Average</p>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[11px] mt-0.5">Transactions</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-xl sm:text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
+                {formatCurrency(Math.round(totalSpent / Math.max(now.getDate(), 1)))}
+              </p>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[11px] mt-0.5">Daily Average</p>
+            </div>
+            <div>
+              <p className="text-xl sm:text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
                 {expenses.length > 0 ? formatCurrency(Math.max(...expenses.map(e => e.amount))) : '—'}
               </p>
-              <p className="text-gray-400 text-xs mt-1">Largest Expense</p>
+              <p className="text-zinc-500 dark:text-zinc-400 text-[11px] mt-0.5">Largest Debit</p>
             </div>
           </div>
         </div>

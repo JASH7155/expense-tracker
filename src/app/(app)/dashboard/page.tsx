@@ -5,23 +5,44 @@ import Link from 'next/link'
 import { useMonthlyExpenses, useCategories, useBudgets } from '@/lib/hooks'
 import { formatCurrency, getMonthLabel } from '@/lib/utils'
 import {
+  Wallet,
+  Calendar,
+  Zap,
+  Target,
+  Plus,
+  ArrowUpRight,
+  TrendingUp,
+} from 'lucide-react'
+import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, CartesianGrid,
 } from 'recharts'
 
-function StatCard({ title, value, sub, icon, color }: {
-  title: string; value: string; sub?: string; icon: string; color: string
+function StatCard({
+  title,
+  value,
+  sub,
+  icon: Icon,
+}: {
+  title: string
+  value: string
+  sub?: string
+  icon: any
 }) {
   return (
-    <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-2xl">{icon}</span>
-        <span className="text-xs px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium">
-          {sub}
-        </span>
+    <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-xs transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
+      <div className="flex items-start justify-between mb-3.5">
+        <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 flex items-center justify-center text-zinc-700 dark:text-zinc-300">
+          <Icon className="w-4 h-4" />
+        </div>
+        {sub && (
+          <span className="text-[11px] px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700/60 font-medium">
+            {sub}
+          </span>
+        )}
       </div>
-      <p className="text-zinc-400 text-sm mb-1">{title}</p>
-      <p className="text-white text-2xl font-bold tracking-tight">{value}</p>
+      <p className="text-zinc-500 dark:text-zinc-400 text-xs font-medium mb-1 tracking-wide uppercase">{title}</p>
+      <p className="text-zinc-950 dark:text-zinc-50 text-2xl font-bold tracking-tight tabular-nums">{value}</p>
     </div>
   )
 }
@@ -52,7 +73,7 @@ export default function DashboardPage() {
           name: cat?.name || 'Miscellaneous',
           total: 0,
           icon: cat?.icon || '🏷️',
-          color: cat?.color || '#6b7280',
+          color: cat?.color || '#71717a',
         }
       }
       byCategory[key].total += exp.amount
@@ -85,7 +106,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-400">Loading your finances...</div>
+        <div className="text-zinc-500 dark:text-zinc-400 text-sm">Loading financial overview...</div>
       </div>
     )
   }
@@ -95,79 +116,83 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-gray-400 text-sm">{getMonthLabel(now.getFullYear(), now.getMonth())}</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-white">
+            Dashboard
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-0.5">
+            {getMonthLabel(now.getFullYear(), now.getMonth())} · Performance overview
+          </p>
         </div>
         <Link
           href="/expenses/new"
-          className="inline-flex items-center gap-2 bg-zinc-100 hover:bg-white text-zinc-900 px-4 py-2.5 rounded-lg font-semibold text-sm transition-colors shadow-sm"
+          className="inline-flex items-center justify-center gap-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-white px-4 py-2.5 rounded-xl text-xs font-semibold transition-all shadow-sm"
         >
-          + Add Expense
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Expense</span>
         </Link>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         <StatCard
           title="Total Spent"
           value={formatCurrency(stats.total)}
-          icon="💸"
+          icon={Wallet}
           sub={`${expenses.length} txns`}
-          color=""
         />
         <StatCard
           title="Today's Spend"
           value={formatCurrency(stats.todayTotal)}
-          icon="📅"
+          icon={Calendar}
           sub="Today"
-          color=""
         />
         <StatCard
-          title="Autopays & Subscriptions"
+          title="Autopays / Recurring"
           value={formatCurrency(stats.autopayTotal)}
-          icon="⚡"
+          icon={Zap}
           sub={`${stats.autopays.length} active`}
-          color=""
         />
         <StatCard
           title="Budget Left"
           value={overallBudget ? formatCurrency(Math.max(overallBudget.amount - stats.total, 0)) : '—'}
-          icon="🎯"
+          icon={Target}
           sub={overallBudget ? `of ${formatCurrency(overallBudget.amount)}` : 'No budget set'}
-          color=""
         />
       </div>
 
       {/* Autopays & Subscriptions Highlight */}
       {stats.autopays.length > 0 && (
-        <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
-          <div className="flex justify-between items-center mb-3">
+        <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-xs">
+          <div className="flex justify-between items-center mb-3.5">
             <div className="flex items-center gap-2">
-              <span className="text-amber-400 text-lg">⚡</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5" />
+              </div>
               <div>
-                <h2 className="text-white font-semibold text-sm">Autopays &amp; Recurring Commitments</h2>
-                <p className="text-zinc-400 text-xs">
-                  {stats.autopays.length} active recurring deduction{stats.autopays.length > 1 ? 's' : ''} (SIP, daily commute, OTT)
+                <h2 className="text-zinc-900 dark:text-zinc-100 font-semibold text-xs sm:text-sm">Active Autopays &amp; Recurring</h2>
+                <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                  {stats.autopays.length} recurring commitment{stats.autopays.length > 1 ? 's' : ''} auto-tracked
                 </p>
               </div>
             </div>
-            <Link href="/expenses" className="text-xs text-zinc-300 hover:text-white underline underline-offset-2">
-              Manage in Expenses →
+            <Link href="/expenses" className="text-xs text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white flex items-center gap-1 font-medium transition-colors">
+              <span>View in Expenses</span>
+              <ArrowUpRight className="w-3 h-3" />
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {stats.autopays.slice(0, 3).map((item) => {
               const freq = (item as any).recurring_frequency
               return (
-                <div key={item.id} className="bg-[#21262d] border border-zinc-800 rounded-lg p-3 flex items-center justify-between">
+                <div key={item.id} className="bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
                   <div className="truncate mr-2">
-                    <p className="text-white text-xs font-medium truncate">{item.description}</p>
-                    <p className="text-zinc-400 text-[11px] capitalize flex items-center gap-1 mt-0.5">
-                      <span className="text-amber-400 text-[10px]">⚡</span>
+                    <p className="text-zinc-900 dark:text-zinc-100 text-xs font-medium truncate">{item.description}</p>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px] capitalize flex items-center gap-1 mt-0.5">
+                      <span className="text-amber-500 text-[10px]">⚡</span>
                       <span>{freq ? `${freq} Autopay` : 'Recurring'}</span>
                     </p>
                   </div>
-                  <span className="text-white font-semibold text-xs whitespace-nowrap">
+                  <span className="text-zinc-900 dark:text-zinc-100 font-bold text-xs whitespace-nowrap tabular-nums">
                     {formatCurrency(item.amount)}
                   </span>
                 </div>
@@ -179,56 +204,56 @@ export default function DashboardPage() {
 
       {/* Budget Progress */}
       {budgetPercent !== null && (
-        <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
+        <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-xs">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-medium text-white">Monthly Budget</span>
-            <span className={`text-sm font-bold ${budgetPercent >= 100 ? 'text-red-400' : budgetPercent >= 80 ? 'text-yellow-400' : 'text-green-400'}`}>
+            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Monthly Budget Burn</span>
+            <span className={`text-xs font-bold tabular-nums ${budgetPercent >= 100 ? 'text-red-600 dark:text-red-400' : 'text-zinc-900 dark:text-zinc-200'}`}>
               {budgetPercent.toFixed(0)}% used
             </span>
           </div>
-          <div className="h-3 bg-[#21262d] rounded-full overflow-hidden">
+          <div className="h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${budgetPercent >= 100 ? 'bg-red-500' : budgetPercent >= 80 ? 'bg-yellow-500' : 'bg-green-500'}`}
+              className={`h-full rounded-full transition-all duration-500 ${budgetPercent >= 100 ? 'bg-red-500' : 'bg-zinc-900 dark:bg-zinc-100'}`}
               style={{ width: `${budgetPercent}%` }}
             />
           </div>
-          <div className="flex justify-between mt-2 text-xs text-gray-500">
+          <div className="flex justify-between mt-2.5 text-[11px] text-zinc-500 dark:text-zinc-400 font-medium tabular-nums">
             <span>{formatCurrency(stats.total)} spent</span>
-            <span>{formatCurrency(overallBudget!.amount)} budget</span>
+            <span>{formatCurrency(overallBudget!.amount)} limit</span>
           </div>
         </div>
       )}
 
       {/* Charts Row */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-5">
         {/* Spending by Category - Pie Chart */}
-        <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
-          <h2 className="text-white font-semibold mb-4">Spending by Category</h2>
+        <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-xs">
+          <h2 className="text-zinc-900 dark:text-zinc-100 font-semibold text-sm mb-4">Spending by Category</h2>
           {pieData.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-gray-500 text-sm">
-              No expenses yet this month
+            <div className="flex items-center justify-center h-48 text-zinc-400 text-xs">
+              No expenses recorded yet this month
             </div>
           ) : (
             <div>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={80} dataKey="total" nameKey="name">
+                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={75} dataKey="total" nameKey="name">
                     {pieData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip
                     formatter={(value: any) => [formatCurrency(Number(value) || 0), '']}
-                    contentStyle={{ backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: '8px', color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '10px', color: '#fff', fontSize: '12px' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
                 {pieData.map((cat, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs">
-                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                    <span className="text-gray-400 truncate">{cat.icon} {cat.name}</span>
-                    <span className="text-white ml-auto">{formatCurrency(cat.total)}</span>
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                    <span className="text-zinc-600 dark:text-zinc-400 truncate text-[11px]">{cat.icon} {cat.name}</span>
+                    <span className="text-zinc-900 dark:text-zinc-200 ml-auto font-medium tabular-nums text-[11px]">{formatCurrency(cat.total)}</span>
                   </div>
                 ))}
               </div>
@@ -237,23 +262,29 @@ export default function DashboardPage() {
         </div>
 
         {/* Daily Spending - Line Chart */}
-        <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
-          <h2 className="text-white font-semibold mb-4">Daily Spending Trend</h2>
+        <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-zinc-900 dark:text-zinc-100 font-semibold text-sm">Daily Spending Velocity</h2>
+            <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Cumulative Pace</span>
+            </div>
+          </div>
           {stats.dailyData.every(d => d.amount === 0) ? (
-            <div className="flex items-center justify-center h-48 text-gray-500 text-sm">
-              No expenses yet this month
+            <div className="flex items-center justify-center h-48 text-zinc-400 text-xs">
+              No daily transactions yet this month
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={230}>
               <LineChart data={stats.dailyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
-                <XAxis dataKey="day" stroke="#6b7280" tick={{ fontSize: 11 }} />
-                <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-zinc-100 dark:text-zinc-800/40" />
+                <XAxis dataKey="day" stroke="#a1a1aa" tick={{ fontSize: 10 }} />
+                <YAxis stroke="#a1a1aa" tick={{ fontSize: 10 }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
                 <Tooltip
                   formatter={(value: any) => [formatCurrency(Number(value) || 0), 'Spent']}
-                  contentStyle={{ backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: '8px', color: '#fff' }}
+                  contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '10px', color: '#fff', fontSize: '12px' }}
                 />
-                <Line type="monotone" dataKey="amount" stroke="#e4e4e7" strokeWidth={2} dot={{ r: 3, fill: '#ffffff' }} />
+                <Line type="monotone" dataKey="amount" stroke="#71717a" strokeWidth={2} dot={{ r: 2.5, fill: '#ffffff' }} />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -261,35 +292,39 @@ export default function DashboardPage() {
       </div>
 
       {/* Top Transactions */}
-      <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-xs">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-white font-semibold">Top Transactions This Month</h2>
-          <Link href="/expenses" className="text-zinc-400 text-sm hover:text-white underline underline-offset-2">View all →</Link>
+          <h2 className="text-zinc-900 dark:text-zinc-100 font-semibold text-sm">Top Transactions This Month</h2>
+          <Link href="/expenses" className="text-xs text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white font-medium flex items-center gap-1 transition-colors">
+            <span>View all</span>
+            <ArrowUpRight className="w-3 h-3" />
+          </Link>
         </div>
         {topExpenses.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p className="text-3xl mb-2">💸</p>
-            <p>No expenses yet. <Link href="/expenses/new" className="text-zinc-300 hover:text-white underline">Add your first one!</Link></p>
+          <div className="text-center py-10 text-zinc-400 text-xs">
+            <p className="text-zinc-500">No expenses logged yet. <Link href="/expenses/new" className="text-zinc-900 dark:text-zinc-100 underline font-medium">Add your first transaction</Link></p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {topExpenses.map((expense) => (
-              <div key={expense.id} className="flex items-center gap-3 p-3 bg-[#21262d] border border-zinc-800/60 rounded-lg">
-                <span className="text-xl">{expense.categories?.icon || '🏷️'}</span>
+              <div key={expense.id} className="flex items-center gap-3.5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+                <span className="text-lg w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                  {expense.categories?.icon || '🏷️'}
+                </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{expense.description}</p>
-                  <p className="text-zinc-400 text-xs flex items-center gap-1.5 mt-0.5">
+                  <p className="text-zinc-900 dark:text-zinc-100 text-xs font-semibold truncate">{expense.description}</p>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px] flex items-center gap-1.5 mt-0.5">
                     <span>{expense.categories?.name || 'Misc'}</span>
-                    <span className="text-zinc-600">·</span>
+                    <span className="text-zinc-400">·</span>
                     <span>{new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
                     {(expense.is_autopay || expense.is_recurring) && (
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-medium">
                         ⚡ {expense.tags?.includes('auto-generated') ? 'Auto' : 'Autopay'}
                       </span>
                     )}
                   </p>
                 </div>
-                <span className="text-white font-semibold text-sm">{formatCurrency(expense.amount)}</span>
+                <span className="text-zinc-950 dark:text-zinc-100 font-bold text-xs tabular-nums">{formatCurrency(expense.amount)}</span>
               </div>
             ))}
           </div>
