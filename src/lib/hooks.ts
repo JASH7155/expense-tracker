@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 import { Category, Expense, Budget, ExpenseWithCategory } from '@/types/database'
 import { getCurrentMonthRange, DEFAULT_CATEGORIES } from './utils'
+import { getSalaryCycleRange, useUserSettings } from './user-settings'
+import { getTransactionType, getFriendDueInfo } from './transaction-utils'
 import { syncAutopays } from './autopay-sync'
 import { cleanAndResetCategories } from './cleanup-categories'
 
@@ -153,9 +155,56 @@ export function useExpenses(filters?: {
   return { expenses, loading, refetch: fetchExpenses }
 }
 
-export function useMonthlyExpenses() {
-  const { start, end } = getCurrentMonthRange()
-  return useExpenses({ startDate: start, endDate: end })
+export function useMonthlyExpenses(customCycleDay?: number) {
+  const { settings } = useUserSettings()
+  const cycleDay = customCycleDay ?? settings.salary_cycle_day
+  const { startDate, endDate } = getSalaryCycleRange(cycleDay)
+  return useExpenses({ startDate, endDate })
+}
+
+export function useCycleFinancials(customCycleDay?: number) {
+  const { settings } = useUserSettings()
+  const cycleDay = customCycleDay ?? settings.salary_cycle_day
+  const activeCycle = getSalaryCycleRange(cycleDay)
+  
+  const { expenses: rawTransactions, loading, refetch } = useExpenses({
+    startDate: activeCycle.startDate,
+    endDate: activeCycle.endDate,
+  })
+
+  // Group transactions into Incomes, Expenses, and Friend Dues
+  const incomes = rawTransactions.filter(t => getTransactionType(t) === 'income')
+  const expenses = rawTransactions.filter(t => getTransactionType(t) === 'expense')
+  const friendDues = rawTransactions.filter(t => getTransactionType(t) === 'lend')
+
+  const totalIncome = incomes.reduce((sum, item) => sum + item.amount, 0)
+  const totalExpense = expenses.reduce((sum, item) => sum + item.amount, 0)
+  const netSavings = totalIncome - totalExpense
+  const savingsRate = totalIncome > 0 ? Math.max(0, (netSavings / totalIncome) * 100) : 0
+
+  // Outstanding friend dues
+  const outstandingDues = friendDues.filter(item => {
+    const info = getFriendDueInfo(item)
+    return info?.dueStatus !== 'settled'
+  })
+  const totalOutstandingDue = outstandingDues.reduce((sum, item) => sum + item.amount, 0)
+
+  return {
+    rawTransactions,
+    incomes,
+    expenses,
+    friendDues,
+    outstandingDues,
+    totalIncome,
+    totalExpense,
+    netSavings,
+    savingsRate,
+    totalOutstandingDue,
+    activeCycle,
+    cycleDay,
+    loading,
+    refetch,
+  }
 }
 
 export function useBudgets() {

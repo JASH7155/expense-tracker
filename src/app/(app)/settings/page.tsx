@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth, useCategories } from '@/lib/hooks'
+import { useUserSettings, POPULAR_INDIAN_BANKS, getSalaryCycleRange } from '@/lib/user-settings'
 import AddCategoryModal from '@/components/AddCategoryModal'
 import { cleanAndResetCategories } from '@/lib/cleanup-categories'
 import {
@@ -18,12 +19,25 @@ import {
   Layers,
   Database,
   UserX,
+  CalendarClock,
+  Building2,
+  Check,
 } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { categories, refetch: refetchCategories } = useCategories()
+  const {
+    settings: userSettings,
+    updateSalaryCycleDay,
+    addBankAccount,
+    removeBankAccount,
+  } = useUserSettings()
+
+  const [cycleDayInput, setCycleDayInput] = useState<number>(userSettings.salary_cycle_day || 28)
+  const [newBankInput, setNewBankInput] = useState('')
+  const [cycleSaved, setCycleSaved] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -32,6 +46,22 @@ export default function SettingsPage() {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
   const [deletingCatId, setDeletingCatId] = useState<string | null>(null)
   const [resettingCats, setResettingCats] = useState(false)
+
+  const activeRange = getSalaryCycleRange(cycleDayInput || userSettings.salary_cycle_day)
+
+  async function handleSaveCycle(day: number) {
+    const valid = Math.max(1, Math.min(31, Math.floor(day)))
+    setCycleDayInput(valid)
+    await updateSalaryCycleDay(valid)
+    setCycleSaved(true)
+    setTimeout(() => setCycleSaved(false), 2000)
+  }
+
+  async function handleAddBank(name: string) {
+    if (!name.trim()) return
+    await addBankAccount(name.trim())
+    setNewBankInput('')
+  }
 
   async function handleResetCategories() {
     if (!confirm('This will merge duplicate categories (e.g. "Food Outings" into "Food & Dining", "Transport" into "Commute & Travel") and leave only the 8 simple core categories. Existing expenses will be safely preserved. Continue?')) return
@@ -163,6 +193,166 @@ export default function SettingsPage() {
           <LogOut className="w-4 h-4" />
           Sign Out of ExpenseIQ
         </button>
+      </div>
+
+      {/* Salary Cycle Configuration */}
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <CalendarClock className="w-4 h-4 text-amber-500" />
+              <span>Salary Cycle &amp; Payday</span>
+            </h2>
+            <p className="text-zinc-500 dark:text-zinc-400 text-xs mt-0.5">
+              Choose the day of the month you receive your salary. Your monthly burn and metrics will calculate within this cycle.
+            </p>
+          </div>
+          <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            Day {userSettings.salary_cycle_day}
+          </span>
+        </div>
+
+        {/* Quick Pick Pills */}
+        <div className="space-y-1.5">
+          <label className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+            Quick Select Common Paydays:
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { day: 28, label: '28th of month (Your Salary)' },
+              { day: 1, label: '1st of month (Calendar)' },
+              { day: 25, label: '25th of month' },
+              { day: 30, label: '30th of month' },
+            ].map(({ day, label }) => (
+              <button
+                key={day}
+                type="button"
+                onClick={() => handleSaveCycle(day)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                  (userSettings.salary_cycle_day || 28) === day
+                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 shadow-2xs'
+                    : 'bg-zinc-50 dark:bg-zinc-900/60 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom Day Input */}
+        <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-zinc-700 dark:text-zinc-300 font-medium whitespace-nowrap">
+              Or custom day (1–31):
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={31}
+              value={cycleDayInput}
+              onChange={(e) => setCycleDayInput(parseInt(e.target.value) || 1)}
+              className="w-16 bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-center text-zinc-900 dark:text-zinc-100 font-bold tabular-nums focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+            <button
+              type="button"
+              onClick={() => handleSaveCycle(cycleDayInput)}
+              className="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              Update Day
+            </button>
+          </div>
+
+          {cycleSaved && (
+            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" />
+              <span>Saved!</span>
+            </p>
+          )}
+        </div>
+
+        {/* Active Window Preview */}
+        <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/60 text-xs flex items-center justify-between">
+          <span className="text-zinc-500 dark:text-zinc-400">Current Calculated Cycle Window:</span>
+          <span className="font-semibold text-zinc-900 dark:text-zinc-100 tabular-nums">
+            {activeRange.label}
+          </span>
+        </div>
+      </div>
+
+      {/* Bank Accounts & Wallets */}
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-blue-500" />
+            <span>Bank Accounts &amp; Wallets</span>
+          </h2>
+          <p className="text-zinc-500 dark:text-zinc-400 text-xs mt-0.5">
+            Tag expenses and income to specific bank accounts, credit cards, or cash wallets
+          </p>
+        </div>
+
+        {/* Current Active Accounts */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {userSettings.bank_accounts.map((acc) => (
+            <div
+              key={acc}
+              className="flex items-center justify-between p-2.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/70 dark:border-zinc-800/80 rounded-xl text-xs"
+            >
+              <span className="text-zinc-900 dark:text-zinc-200 font-medium truncate flex items-center gap-2">
+                <Building2 className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+                <span className="truncate">{acc}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => removeBankAccount(acc)}
+                className="text-zinc-400 hover:text-rose-500 p-1 transition-colors cursor-pointer flex-shrink-0"
+                title="Remove account"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Add Account Input */}
+        <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/60 space-y-3">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="e.g. Axis Bank, Paytm Wallet, Emergency Cash"
+              value={newBankInput}
+              onChange={(e) => setNewBankInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddBank(newBankInput); }}
+              className="flex-1 bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+            <button
+              type="button"
+              onClick={() => handleAddBank(newBankInput)}
+              disabled={!newBankInput.trim()}
+              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 text-xs font-semibold transition-colors disabled:opacity-40 cursor-pointer"
+            >
+              Add
+            </button>
+          </div>
+
+          {/* Quick Suggestions from Indian Banks */}
+          <div>
+            <p className="text-[11px] font-medium text-zinc-400 mb-1.5">Quick Add Presets:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR_INDIAN_BANKS.filter(b => !userSettings.bank_accounts.includes(b)).slice(0, 6).map((bank) => (
+                <button
+                  key={bank}
+                  type="button"
+                  onClick={() => handleAddBank(bank)}
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                >
+                  + {bank}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Categories Management */}

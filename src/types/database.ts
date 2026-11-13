@@ -54,6 +54,10 @@ export interface Database {
           is_autopay: boolean
           notes: string | null
           created_at: string
+          type?: 'expense' | 'income' | 'lend'
+          bank_account?: string | null
+          friend_name?: string | null
+          due_status?: 'due' | 'settled' | null
         }
         Insert: {
           id?: string
@@ -69,6 +73,10 @@ export interface Database {
           is_autopay?: boolean
           notes?: string | null
           created_at?: string
+          type?: 'expense' | 'income' | 'lend'
+          bank_account?: string | null
+          friend_name?: string | null
+          due_status?: 'due' | 'settled' | null
         }
         Update: {
           id?: string
@@ -84,6 +92,10 @@ export interface Database {
           is_autopay?: boolean
           notes?: string | null
           created_at?: string
+          type?: 'expense' | 'income' | 'lend'
+          bank_account?: string | null
+          friend_name?: string | null
+          due_status?: 'due' | 'settled' | null
         }
         Relationships: [
           {

@@ -35,6 +35,18 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'expenses' AND column_name = 'is_autopay') THEN
     ALTER TABLE public.expenses ADD COLUMN is_autopay BOOLEAN DEFAULT false;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'expenses' AND column_name = 'type') THEN
+    ALTER TABLE public.expenses ADD COLUMN type TEXT DEFAULT 'expense' CHECK (type IN ('expense', 'income', 'lend'));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'expenses' AND column_name = 'bank_account') THEN
+    ALTER TABLE public.expenses ADD COLUMN bank_account TEXT DEFAULT NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'expenses' AND column_name = 'friend_name') THEN
+    ALTER TABLE public.expenses ADD COLUMN friend_name TEXT DEFAULT NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'expenses' AND column_name = 'due_status') THEN
+    ALTER TABLE public.expenses ADD COLUMN due_status TEXT DEFAULT NULL CHECK (due_status IN ('due', 'settled', NULL));
+  END IF;
 END $$;
 
 -- Budgets table
