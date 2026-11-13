@@ -15,17 +15,23 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
+  // Password requirements validation
+  const hasLength = password.length >= 8
+  const hasNumber = /\d/.test(password)
+  const hasLetter = /[a-zA-Z]/.test(password)
+  const isPasswordValid = hasLength && hasNumber && hasLetter
+
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.')
+    if (!isPasswordValid) {
+      setError('Password must be at least 8 characters and contain at least one letter and one number.')
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.')
+      setError('Passwords do not match. Please re-enter.')
       return
     }
 
@@ -106,6 +112,25 @@ export default function ResetPasswordPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+
+                {/* Password Requirements Indicator */}
+                <div className="mt-2 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/60 text-[11px] space-y-1">
+                  <p className="font-semibold text-zinc-500 dark:text-zinc-400">Password Requirements:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                    <div className={`flex items-center gap-1 ${hasLength ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-zinc-400'}`}>
+                      <span>{hasLength ? '✓' : '○'}</span>
+                      <span>8+ characters</span>
+                    </div>
+                    <div className={`flex items-center gap-1 ${hasNumber ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-zinc-400'}`}>
+                      <span>{hasNumber ? '✓' : '○'}</span>
+                      <span>1+ number</span>
+                    </div>
+                    <div className={`flex items-center gap-1 ${hasLetter ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-zinc-400'}`}>
+                      <span>{hasLetter ? '✓' : '○'}</span>
+                      <span>1+ letter</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -120,7 +145,7 @@ export default function ResetPasswordPage() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    minLength={6}
+                    minLength={8}
                     className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl pl-10 pr-10 py-2.5 text-zinc-900 dark:text-zinc-100 text-sm placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600"
                   />
                   <button
@@ -131,6 +156,11 @@ export default function ResetPasswordPage() {
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {confirmPassword && (
+                  <p className={`text-[11px] mt-1.5 font-medium ${password === confirmPassword ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                    {password === confirmPassword ? '✓ Passwords match' : '✕ Passwords do not match'}
+                  </p>
+                )}
               </div>
 
               <button

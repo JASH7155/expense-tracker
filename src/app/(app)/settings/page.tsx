@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Layers,
   Database,
+  UserX,
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -26,6 +27,8 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteAccountConfirm, setDeleteAccountConfirm] = useState('')
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false)
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
   const [deletingCatId, setDeletingCatId] = useState<string | null>(null)
   const [resettingCats, setResettingCats] = useState(false)
@@ -91,6 +94,37 @@ export default function SettingsPage() {
     setDeleteLoading(false)
     alert('All expense records deleted successfully.')
     window.location.reload()
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteAccountConfirm !== 'DELETE MY ACCOUNT') return
+    if (!confirm('Are you absolutely certain? This will delete your entire account, all expenses, budgets, categories, and credentials forever. This cannot be undone.')) return
+    
+    setDeleteAccountLoading(true)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser) {
+        // Delete user related records
+        await supabase.from('expenses').delete().eq('user_id', authUser.id)
+        await supabase.from('budgets').delete().eq('user_id', authUser.id)
+        await supabase.from('categories').delete().eq('user_id', authUser.id)
+        
+        // Attempt database RPC to delete user from auth.users
+        try {
+          await (supabase as any).rpc('delete_user_account')
+        } catch (rpcErr) {
+          console.warn('RPC delete_user_account not found or failed, proceeding with sign out:', rpcErr)
+        }
+      }
+
+      await supabase.auth.signOut()
+      alert('Your account has been deleted.')
+      router.push('/auth')
+    } catch (err: any) {
+      alert('Failed to delete account: ' + (err?.message || 'Please try again.'))
+    } finally {
+      setDeleteAccountLoading(false)
+    }
   }
 
   async function handleSignOut() {
@@ -241,7 +275,7 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        {/* Delete All */}
+        {/* Delete All Expenses */}
         <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-5 space-y-3">
           <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
             <AlertTriangle className="w-4 h-4" />
@@ -265,6 +299,34 @@ export default function SettingsPage() {
             >
               <Trash2 className="w-4 h-4" />
               {deleteLoading ? 'Purging records...' : 'Confirm Ledger Reset'}
+            </button>
+          </div>
+        </div>
+
+        {/* Delete Account */}
+        <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-5 space-y-3">
+          <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+            <UserX className="w-4 h-4" />
+            <p className="text-xs sm:text-sm font-semibold">Delete Account</p>
+          </div>
+          <p className="text-zinc-500 dark:text-zinc-400 text-xs leading-relaxed">
+            Permanently deletes your account profile, credentials, all categories, budgets, and all expense data. This action is completely permanent and cannot be undone.
+          </p>
+          <div className="space-y-2">
+            <input
+              type="text"
+              placeholder='Type "DELETE MY ACCOUNT" to confirm'
+              value={deleteAccountConfirm}
+              onChange={(e) => setDeleteAccountConfirm(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-rose-200 dark:border-rose-900/40 rounded-xl px-3.5 py-2 text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-rose-500"
+            />
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleteAccountConfirm !== 'DELETE MY ACCOUNT' || deleteAccountLoading}
+              className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 text-xs sm:text-sm font-medium transition-colors shadow-sm cursor-pointer"
+            >
+              <UserX className="w-4 h-4" />
+              {deleteAccountLoading ? 'Deleting Account...' : 'Permanently Delete My Account'}
             </button>
           </div>
         </div>

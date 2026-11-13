@@ -184,3 +184,23 @@ BEGIN
       );
   END LOOP;
 END $$;
+
+-- 9. Secure Account Deletion Function
+CREATE OR REPLACE FUNCTION public.delete_user_account()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Delete all associated user rows
+  DELETE FROM public.expenses WHERE user_id = auth.uid();
+  DELETE FROM public.budgets WHERE user_id = auth.uid();
+  DELETE FROM public.categories WHERE user_id = auth.uid();
+  -- Delete the user from auth.users
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$;
+
+-- Grant authenticated users the ability to execute their own deletion
+GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
