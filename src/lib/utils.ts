@@ -62,14 +62,40 @@ export const AUTOPAY_FREQUENCIES = [
   { value: 'yearly', label: 'Yearly (Annual renewal)', icon: '📆' },
 ] as const
 
-// Simple, clean core categories
+// Simple, clean core categories with distinct, vibrant colors
 export const DEFAULT_CATEGORIES = [
-  { name: 'Food & Dining', icon: '🍔', color: '#71717a' },
-  { name: 'Commute & Travel', icon: '🛵', color: '#64748b' },
-  { name: 'Shopping', icon: '🛍️', color: '#78716c' },
-  { name: 'Entertainment', icon: '🎬', color: '#52525b' },
-  { name: 'Subscriptions', icon: '⚡', color: '#475569' },
-  { name: 'Investments & Savings', icon: '💰', color: '#3f3f46' },
-  { name: 'Family & Gifts', icon: '🎁', color: '#737373' },
-  { name: 'Other', icon: '🏷️', color: '#71717a' },
+  { name: 'Food & Dining', icon: '🍔', color: '#f97316' },        // Orange
+  { name: 'Commute & Travel', icon: '🛵', color: '#3b82f6' },     // Blue
+  { name: 'Shopping', icon: '🛍️', color: '#8b5cf6' },             // Purple
+  { name: 'Entertainment', icon: '🎬', color: '#ec4899' },        // Pink
+  { name: 'Subscriptions', icon: '⚡', color: '#06b6d4' },        // Cyan
+  { name: 'Investments & Savings', icon: '💰', color: '#10b981' },// Emerald
+  { name: 'Family & Gifts', icon: '🎁', color: '#f43f5e' },       // Rose
+  { name: 'Other', icon: '🏷️', color: '#64748b' },                // Slate
 ] as const
+
+export const CATEGORY_COLOR_MAP: Record<string, string> = {
+  'food & dining': '#f97316',
+  'commute & travel': '#3b82f6',
+  'shopping': '#8b5cf6',
+  'entertainment': '#ec4899',
+  'subscriptions': '#06b6d4',
+  'investments & savings': '#10b981',
+  'family & gifts': '#f43f5e',
+  'other': '#64748b',
+}
+
+export const DISTINCT_PALETTE = [
+  '#f97316', '#3b82f6', '#8b5cf6', '#10b981',
+  '#ec4899', '#06b6d4', '#f43f5e', '#eab308',
+  '#14b8a6', '#6366f1', '#a855f7', '#84cc16'
+]
+
+export function getCategoryColor(name: string, fallbackColor?: string, index = 0): string {
+  const key = name.toLowerCase().trim()
+  if (CATEGORY_COLOR_MAP[key]) return CATEGORY_COLOR_MAP[key]
+  if (fallbackColor && fallbackColor !== '#71717a' && fallbackColor !== '#6b7280') {
+    return fallbackColor
+  }
+  return DISTINCT_PALETTE[index % DISTINCT_PALETTE.length]
+}

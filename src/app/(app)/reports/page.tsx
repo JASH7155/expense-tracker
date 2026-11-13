@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useExpenses, useCategories } from '@/lib/hooks'
-import { formatCurrency, getMonthDateRange, getMonthLabel } from '@/lib/utils'
+import { formatCurrency, getMonthDateRange, getMonthLabel, getCategoryColor } from '@/lib/utils'
 import {
   BarChart3,
   Download,
@@ -39,14 +39,16 @@ export default function ReportsPage() {
     const total = expenses.reduce((s, e) => s + e.amount, 0)
     const byCategory: Record<string, { name: string; total: number; color: string; icon: string; count: number }> = {}
     const byPayment: Record<string, number> = {}
+    let catIdx = 0
 
     for (const exp of expenses) {
       const catKey = exp.category_id || 'misc'
       if (!byCategory[catKey]) {
+        const catName = exp.categories?.name || 'Uncategorized'
         byCategory[catKey] = {
-          name: exp.categories?.name || 'Uncategorized',
+          name: catName,
           total: 0,
-          color: exp.categories?.color || '#71717a',
+          color: getCategoryColor(catName, exp.categories?.color, catIdx++),
           icon: exp.categories?.icon || '🏷️',
           count: 0,
         }

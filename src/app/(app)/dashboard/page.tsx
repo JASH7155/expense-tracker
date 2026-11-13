@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { useMonthlyExpenses, useCategories, useBudgets } from '@/lib/hooks'
-import { formatCurrency, getMonthLabel } from '@/lib/utils'
+import { formatCurrency, getMonthLabel, getCategoryColor } from '@/lib/utils'
 import {
   Wallet,
   Calendar,
@@ -63,17 +63,19 @@ export default function DashboardPage() {
     const autopays = expenses.filter(e => e.is_autopay || e.is_recurring)
     const autopayTotal = autopays.reduce((sum, e) => sum + e.amount, 0)
 
-    // Category breakdown
+    // Category breakdown with distinct, vivid colors
     const byCategory: Record<string, { name: string; total: number; icon: string; color: string }> = {}
+    let catIndex = 0
     for (const exp of expenses) {
       const cat = exp.categories
       const key = cat?.id || 'misc'
       if (!byCategory[key]) {
+        const catName = cat?.name || 'Miscellaneous'
         byCategory[key] = {
-          name: cat?.name || 'Miscellaneous',
+          name: catName,
           total: 0,
           icon: cat?.icon || '🏷️',
-          color: cat?.color || '#71717a',
+          color: getCategoryColor(catName, cat?.color, catIndex++),
         }
       }
       byCategory[key].total += exp.amount
@@ -235,25 +237,52 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={75} dataKey="total" nameKey="name">
-                    {pieData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: any) => [formatCurrency(Number(value) || 0), '']}
-                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '10px', color: '#fff', fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={210}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      paddingAngle={3}
+                      dataKey="total"
+                      nameKey="name"
+                      stroke="none"
+                    >
+                      {pieData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: any, name: any) => [formatCurrency(Number(value) || 0), String(name)]}
+                      contentStyle={{
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '12px',
+                        color: '#fff',
+                        fontSize: '12px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                      }}
+                      itemStyle={{ color: '#fff', fontWeight: 500 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center metric */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-1">
+                  <span className="text-[10px] uppercase font-mono text-zinc-400 tracking-wider">Total</span>
+                  <span className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
+                    {formatCurrency(stats.total)}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
                 {pieData.map((cat, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs">
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
-                    <span className="text-zinc-600 dark:text-zinc-400 truncate text-[11px]">{cat.icon} {cat.name}</span>
-                    <span className="text-zinc-900 dark:text-zinc-200 ml-auto font-medium tabular-nums text-[11px]">{formatCurrency(cat.total)}</span>
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-xs" style={{ backgroundColor: cat.color }} />
+                    <span className="text-zinc-600 dark:text-zinc-400 truncate text-[11px] font-medium">{cat.name}</span>
+                    <span className="text-zinc-900 dark:text-zinc-200 ml-auto font-semibold tabular-nums text-[11px]">{formatCurrency(cat.total)}</span>
                   </div>
                 ))}
               </div>
