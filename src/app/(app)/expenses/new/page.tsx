@@ -9,6 +9,7 @@ import { Category } from '@/types/database'
 import { syncAutopays } from '@/lib/autopay-sync'
 import { parseUPIText } from '@/lib/upi-parser'
 import AddCategoryModal from '@/components/AddCategoryModal'
+import ReceiptScannerModal from '@/components/ReceiptScannerModal'
 import {
   ArrowLeft,
   Calendar,
@@ -23,6 +24,7 @@ import {
   Sparkles,
   ClipboardPaste,
   Check,
+  Camera,
 } from 'lucide-react'
 
 const PAYMENT_OPTIONS = [
@@ -48,6 +50,7 @@ export default function NewExpensePage() {
   const [error, setError] = useState('')
   const [suggestedCategory, setSuggestedCategory] = useState<Category | null>(null)
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
+  const [isReceiptScannerOpen, setIsReceiptScannerOpen] = useState(false)
   const [upiText, setUpiText] = useState('')
   const [upiParsedFeedback, setUpiParsedFeedback] = useState<string | null>(null)
 
@@ -208,41 +211,56 @@ export default function NewExpensePage() {
           </p>
         </div>
 
-        {/* Smart UPI SMS / Payment Text Quick Fill */}
-        <div className="mb-6 p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 dark:bg-blue-500/10 space-y-2.5">
+        {/* Quick Action Helpers: Scan Receipt / Camera & Smart UPI Paste */}
+        <div className="mb-6 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-              Smart UPI Quick-Fill (SMS / GPay / PhonePe)
-            </span>
+            <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Fast Ingestion Options</span>
             <button
               type="button"
-              onClick={handlePasteFromClipboard}
-              className="text-[11px] inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors"
+              onClick={() => setIsReceiptScannerOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
             >
-              <ClipboardPaste className="w-3 h-3" />
-              Paste from Clipboard
+              <Camera className="w-3.5 h-3.5 text-purple-500" />
+              <span>Scan Receipt / Invoice</span>
             </button>
           </div>
-          <div className="relative">
-            <input
-              type="text"
-              value={upiText}
-              onChange={(e) => handleProcessUPIText(e.target.value)}
-              placeholder='e.g. "Sent Rs. 450 to Swiggy via UPI" or "Paid ₹200 to Chai Point"'
-              className="w-full bg-white dark:bg-[#090a0f] border border-blue-200 dark:border-blue-900/60 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
-            />
+
+          {/* Smart UPI SMS / Payment Text Quick Fill */}
+          <div className="p-3.5 rounded-xl border border-blue-500/20 bg-blue-500/5 dark:bg-blue-500/10 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                Smart UPI Quick-Fill (SMS / GPay / PhonePe)
+              </span>
+              <button
+                type="button"
+                onClick={handlePasteFromClipboard}
+                className="text-[11px] inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors"
+              >
+                <ClipboardPaste className="w-3 h-3" />
+                Paste from Clipboard
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                value={upiText}
+                onChange={(e) => handleProcessUPIText(e.target.value)}
+                placeholder='e.g. "Sent Rs. 450 to Swiggy via UPI" or "Paid ₹200 to Chai Point"'
+                className="w-full bg-white dark:bg-[#090a0f] border border-blue-200 dark:border-blue-900/60 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+              />
+            </div>
+            {upiParsedFeedback ? (
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 pt-0.5">
+                <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{upiParsedFeedback}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Paste any transaction SMS or payment confirmation text. It will automatically detect the amount, merchant, date, and category.
+              </p>
+            )}
           </div>
-          {upiParsedFeedback ? (
-            <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 pt-0.5">
-              <Check className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>{upiParsedFeedback}</span>
-            </p>
-          ) : (
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              Paste any transaction SMS or payment confirmation text. It will automatically detect the amount, merchant, date, and category.
-            </p>
-          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -515,6 +533,26 @@ export default function NewExpensePage() {
         onCategoryCreated={(newCat) => {
           refetchCategories()
           setForm(f => ({ ...f, category_id: newCat.id }))
+        }}
+      />
+
+      <ReceiptScannerModal
+        isOpen={isReceiptScannerOpen}
+        onClose={() => setIsReceiptScannerOpen(false)}
+        categories={categories}
+        onReceiptScanned={({ amount, description, date, categoryId, notes }) => {
+          setForm(prev => ({
+            ...prev,
+            amount: amount || prev.amount,
+            description: description || prev.description,
+            date: date || prev.date,
+            category_id: categoryId || prev.category_id,
+            notes: notes || prev.notes,
+          }))
+          if (categoryId) {
+            const matched = categories.find(c => c.id === categoryId)
+            if (matched) setSuggestedCategory(matched)
+          }
         }}
       />
     </div>
