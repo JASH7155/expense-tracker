@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useExpenses, useCategories } from '@/lib/hooks'
 import { formatCurrency, formatDate, PAYMENT_METHODS } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { Plus, Search, Calendar, Pencil, Trash2, X, AlertCircle } from 'lucide-react'
+import { Plus, Search, Calendar, Pencil, Trash2, X, AlertCircle, FileSpreadsheet } from 'lucide-react'
 
 export default function ExpensesPage() {
   const [search, setSearch] = useState('')
@@ -48,13 +48,22 @@ export default function ExpensesPage() {
             {expenses.length} transaction{expenses.length === 1 ? '' : 's'} recorded · <span className="font-semibold text-zinc-900 dark:text-zinc-200 tabular-nums">{formatCurrency(totalShown)}</span>
           </p>
         </div>
-        <Link
-          href="/expenses/new"
-          className="inline-flex items-center justify-center gap-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-white px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-sm"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Expense</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/expenses/import"
+            className="inline-flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 px-3.5 py-2.5 rounded-xl font-semibold text-xs transition-all border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-blue-500" />
+            <span>Import Statement</span>
+          </Link>
+          <Link
+            href="/expenses/new"
+            className="inline-flex items-center justify-center gap-1.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-white px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Expense</span>
+          </Link>
+        </div>
       </div>
 
       {/* Filter Toolbar */}
