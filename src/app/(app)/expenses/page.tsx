@@ -106,13 +106,26 @@ export default function ExpensesPage() {
         existingTags.push('due_status:settled')
       }
 
-      await supabase
+      let { error: updateError } = await supabase
         .from('expenses')
         .update({
           due_status: 'settled',
           tags: existingTags,
         } as any)
         .eq('id', id)
+
+      if (updateError && (
+        updateError.message?.toLowerCase().includes('schema cache') ||
+        updateError.message?.toLowerCase().includes('column') ||
+        (updateError as any).code === 'PGRST204'
+      )) {
+        await supabase
+          .from('expenses')
+          .update({
+            tags: existingTags,
+          } as any)
+          .eq('id', id)
+      }
 
       await refetch()
     } catch (err: any) {

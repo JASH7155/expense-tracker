@@ -106,13 +106,26 @@ export default function DashboardPage() {
         existingTags.push('due_status:settled')
       }
 
-      await supabase
+      let { error: updateError } = await supabase
         .from('expenses')
         .update({
           due_status: 'settled',
           tags: existingTags,
         } as any)
         .eq('id', id)
+
+      if (updateError && (
+        updateError.message?.toLowerCase().includes('schema cache') ||
+        updateError.message?.toLowerCase().includes('column') ||
+        (updateError as any).code === 'PGRST204'
+      )) {
+        await supabase
+          .from('expenses')
+          .update({
+            tags: existingTags,
+          } as any)
+          .eq('id', id)
+      }
 
       await refetch()
     } catch (err: any) {
@@ -209,28 +222,28 @@ export default function DashboardPage() {
       </div>
 
       {/* Salary Cycle Info Banner */}
-      <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 text-white dark:from-[#0f121d] dark:to-[#171a27] border border-zinc-700/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/25 dark:border-amber-500/30 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white flex-shrink-0">
-            <CalendarClock className="w-5 h-5 text-amber-400" />
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center flex-shrink-0 shadow-2xs">
+            <CalendarClock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-sm text-white">Salary Cycle Active</span>
-              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 font-semibold border border-amber-400/30">
+              <span className="font-semibold text-sm text-zinc-950 dark:text-zinc-50">Salary Cycle Active</span>
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-800 dark:text-amber-200 font-bold border border-amber-500/30">
                 Starts Day {cycleDay}
               </span>
             </div>
-            <p className="text-xs text-zinc-300 dark:text-zinc-400 mt-0.5">
-              Cycle Window: <span className="text-white font-medium">{activeCycle.label}</span> · All metrics and charts calculate within this window.
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+              Cycle Window: <span className="text-zinc-950 dark:text-zinc-100 font-semibold">{activeCycle.label}</span> · All metrics and charts calculate within this window.
             </p>
           </div>
         </div>
         <Link
           href="/settings"
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors border border-white/10 flex-shrink-0 cursor-pointer"
+          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-amber-50 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs font-semibold transition-colors border border-amber-200 dark:border-zinc-700 shadow-2xs flex-shrink-0 cursor-pointer"
         >
-          <Settings className="w-3.5 h-3.5" />
+          <Settings className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
           <span>Edit Cycle Day</span>
         </Link>
       </div>

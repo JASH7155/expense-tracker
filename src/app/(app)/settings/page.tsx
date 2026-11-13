@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth, useCategories } from '@/lib/hooks'
@@ -22,7 +22,21 @@ import {
   CalendarClock,
   Building2,
   Check,
+  Mail,
+  Smile,
+  BadgeCheck,
+  Loader2,
 } from 'lucide-react'
+
+const NAME_SUGGESTIONS = [
+  'Pantham Jashwanth',
+  'Personal Account',
+  'Family Ledger',
+  'My Spends',
+  'Work & Freelance',
+]
+
+const AVATAR_PRESETS = ['👤', '💼', '🚀', '🦊', '⚡', '👑', '💰', '🎯', '🥑', '☕']
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -46,6 +60,65 @@ export default function SettingsPage() {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
   const [deletingCatId, setDeletingCatId] = useState<string | null>(null)
   const [resettingCats, setResettingCats] = useState(false)
+
+  // Personal Information States
+  const [fullName, setFullName] = useState('')
+  const [profileEmail, setProfileEmail] = useState('')
+  const [upiId, setUpiId] = useState('')
+  const [avatarEmoji, setAvatarEmoji] = useState('👤')
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileSuccess, setProfileSuccess] = useState('')
+  const [profileError, setProfileError] = useState('')
+
+  // Sync initial user info when user loads
+  useEffect(() => {
+    if (user) {
+      setFullName(user.user_metadata?.full_name || user.user_metadata?.display_name || '')
+      setProfileEmail(user.email || '')
+      setUpiId(user.user_metadata?.upi_id || '')
+      setAvatarEmoji(user.user_metadata?.avatar || '👤')
+    }
+  }, [user])
+
+  async function handleSaveProfile(e: React.FormEvent) {
+    e.preventDefault()
+    setProfileSaving(true)
+    setProfileSuccess('')
+    setProfileError('')
+
+    try {
+      const updateData: any = {
+        data: {
+          full_name: fullName.trim(),
+          display_name: fullName.trim(),
+          upi_id: upiId.trim(),
+          avatar: avatarEmoji,
+        },
+      }
+
+      const emailChanged = profileEmail.trim().toLowerCase() !== (user?.email || '').toLowerCase()
+      if (emailChanged && profileEmail.trim()) {
+        updateData.email = profileEmail.trim()
+      }
+
+      const { error } = await supabase.auth.updateUser(updateData)
+
+      if (error) {
+        setProfileError(error.message)
+      } else {
+        if (emailChanged) {
+          setProfileSuccess('Profile saved! A verification email has been sent to your new address to confirm the change.')
+        } else {
+          setProfileSuccess('Personal profile updated successfully!')
+        }
+        setTimeout(() => setProfileSuccess(''), 4000)
+      }
+    } catch (err: any) {
+      setProfileError(err?.message || 'Failed to update profile.')
+    } finally {
+      setProfileSaving(false)
+    }
+  }
 
   const activeRange = getSalaryCycleRange(cycleDayInput || userSettings.salary_cycle_day)
 
@@ -174,25 +247,152 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Account Info */}
-      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Account Profile</h2>
-        <div className="flex items-center gap-4 mb-5">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-zinc-100 font-semibold text-lg flex-shrink-0">
-            {user?.email?.[0]?.toUpperCase() || <User className="w-5 h-5 text-zinc-500" />}
+      {/* Personal Profile & Account Info */}
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-zinc-100 font-semibold text-xl flex-shrink-0 shadow-2xs">
+              {avatarEmoji || fullName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '👤'}
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                {fullName || 'Personal Profile'}
+              </h2>
+              <p className="text-zinc-500 text-xs truncate max-w-[220px] sm:max-w-none">{user?.email}</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-zinc-900 dark:text-zinc-100 font-medium text-sm truncate">{user?.email || 'Authenticated User'}</p>
-            <p className="text-zinc-500 text-xs font-mono mt-0.5">Protected with Row-Level Security</p>
-          </div>
+          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold">
+            Active
+          </span>
         </div>
-        <button
-          onClick={handleSignOut}
-          className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100/60 dark:hover:bg-rose-950/40 text-xs sm:text-sm font-medium transition-colors cursor-pointer"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign Out of ExpenseIQ
-        </button>
+
+        {profileSuccess && (
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-xl text-emerald-700 dark:text-emerald-300 text-xs font-medium flex items-center gap-2">
+            <BadgeCheck className="w-4 h-4 flex-shrink-0" />
+            <span>{profileSuccess}</span>
+          </div>
+        )}
+
+        {profileError && (
+          <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-medium">
+            {profileError}
+          </div>
+        )}
+
+        <form onSubmit={handleSaveProfile} className="space-y-4 pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
+          {/* Avatar Emoji Picker */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+              <Smile className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Choose Profile Avatar / Icon</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {AVATAR_PRESETS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => setAvatarEmoji(emoji)}
+                  className={`w-9 h-9 rounded-xl text-base flex items-center justify-center border transition-all cursor-pointer ${
+                    avatarEmoji === emoji
+                      ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 shadow-2xs scale-105'
+                      : 'bg-zinc-50 dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Full Name / Ledger Name */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Your Name / Account Title</span>
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="e.g. Pantham Jashwanth or Personal Account"
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+            {/* Suggested Names Chips */}
+            <div className="mt-2">
+              <p className="text-[11px] font-medium text-zinc-400 mb-1">Suggested Names (click to apply):</p>
+              <div className="flex flex-wrap gap-1.5">
+                {NAME_SUGGESTIONS.map((sug) => (
+                  <button
+                    key={sug}
+                    type="button"
+                    onClick={() => setFullName(sug)}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                  >
+                    + {sug}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Email Address */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Email Address</span>
+            </label>
+            <input
+              type="email"
+              required
+              value={profileEmail}
+              onChange={(e) => setProfileEmail(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+            />
+            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1">
+              If changing your email, Supabase sends a confirmation email to verify before updating.
+            </p>
+          </div>
+
+          {/* Optional UPI ID / Quick Handle */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Primary UPI ID / Handle (Optional)</span>
+            </label>
+            <input
+              type="text"
+              value={upiId}
+              onChange={(e) => setUpiId(e.target.value)}
+              placeholder="e.g. yourname@okhdfcbank or 9876543210@paytm"
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 font-mono"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={profileSaving}
+            className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 text-xs sm:text-sm font-semibold transition-colors disabled:opacity-50 shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            {profileSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Saving Profile...</span>
+              </>
+            ) : (
+              <span>Save Personal Info</span>
+            )}
+          </button>
+        </form>
+
+        <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
+          <button
+            onClick={handleSignOut}
+            className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100/60 dark:hover:bg-rose-950/40 text-xs sm:text-sm font-medium transition-colors cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out of ExpenseIQ
+          </button>
+        </div>
       </div>
 
       {/* Salary Cycle Configuration */}

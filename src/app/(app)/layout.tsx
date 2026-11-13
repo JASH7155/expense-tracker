@@ -74,6 +74,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     )
   }
 
+  const userMetadata = user?.user_metadata || {}
+  const displayName = userMetadata.full_name || userMetadata.display_name || user?.email?.split('@')[0] || 'User'
+  const avatarEmoji = userMetadata.avatar || null
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-[#090a0f] text-zinc-900 dark:text-zinc-100 flex transition-colors duration-200">
       {/* Sidebar - Desktop */}
@@ -118,18 +122,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* User Card & Sign Out */}
         <div className="p-3.5 border-t border-zinc-200/80 dark:border-zinc-800/80 space-y-2">
-          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/60">
-            <div className="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 flex items-center justify-center text-zinc-700 dark:text-zinc-300 text-xs font-bold flex-shrink-0">
-              {user.email?.[0]?.toUpperCase() || 'U'}
+          <Link
+            href="/settings"
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900/50 dark:hover:bg-zinc-850 border border-zinc-200/60 dark:border-zinc-800/60 transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 flex items-center justify-center text-zinc-800 dark:text-zinc-200 text-xs font-bold flex-shrink-0 shadow-2xs">
+              {avatarEmoji || displayName[0]?.toUpperCase() || 'U'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-zinc-900 dark:text-zinc-200 truncate">{user.email}</p>
-              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate">Account Active</p>
+              <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate group-hover:underline">
+                {displayName}
+              </p>
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate">{user.email}</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors font-medium"
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-500 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors font-medium cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
@@ -149,7 +158,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <ThemeToggle />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white p-2 rounded-lg"
+            className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white p-2 rounded-lg cursor-pointer"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -185,10 +194,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               })}
             </nav>
             <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <span className="text-xs text-zinc-500 truncate max-w-[180px]">{user.email}</span>
+              <div className="min-w-0 pr-2">
+                <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">{displayName}</p>
+                <p className="text-[10px] text-zinc-400 truncate">{user.email}</p>
+              </div>
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 font-medium px-2 py-1 rounded"
+                className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 font-medium px-2 py-1 rounded cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Sign Out</span>

@@ -203,7 +203,7 @@ export default function NewExpensePage() {
       finalDescription = `Lent to ${friendName.trim()}`
     }
 
-    const payload: any = {
+    const basePayload: any = {
       user_id: user.id,
       amount: parseFloat(form.amount),
       description: finalDescription,
@@ -215,13 +215,27 @@ export default function NewExpensePage() {
       recurring_frequency: (transactionType === 'expense' && form.is_autopay) ? form.recurring_frequency : null,
       is_autopay: transactionType === 'expense' ? form.is_autopay : false,
       notes: form.notes || null,
+    }
+
+    // Attempt insert with extended columns first
+    let { error: insertError } = await supabase.from('expenses').insert({
+      ...basePayload,
       type: transactionType,
       bank_account: activeBankAccount,
       friend_name: transactionType === 'lend' ? friendName.trim() : null,
       due_status: transactionType === 'lend' ? 'due' : null,
-    }
+    })
 
-    const { error: insertError } = await supabase.from('expenses').insert(payload)
+    // If remote DB doesn't have the new columns yet (PGRST204 / schema cache error),
+    // fallback seamlessly to inserting basePayload (where tags already store type, bank, friend, due)
+    if (insertError && (
+      insertError.message?.toLowerCase().includes('schema cache') ||
+      insertError.message?.toLowerCase().includes('column') ||
+      (insertError as any).code === 'PGRST204'
+    )) {
+      const fallback = await supabase.from('expenses').insert(basePayload)
+      insertError = fallback.error
+    }
 
     if (insertError) {
       setError(insertError.message)
