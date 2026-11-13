@@ -321,7 +321,7 @@ export default function EditExpensePage() {
             <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">
               Payment Method
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
               {PAYMENT_OPTIONS.map(({ value, label, Icon }) => {
                 const isSelected = form.payment_method === value
                 return (
@@ -344,7 +344,7 @@ export default function EditExpensePage() {
           </div>
 
           {/* Autopay / Recurring Deduction */}
-          <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 space-y-3">
+          <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 space-y-2.5">
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input
@@ -361,12 +361,12 @@ export default function EditExpensePage() {
               </label>
               {form.is_autopay && (
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold tracking-wider">
-                  Active Autopay
+                  Active
                 </span>
               )}
             </div>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed pl-6">
-              When enabled, ExpenseIQ automatically posts deductions daily or monthly up to today. Each auto-posted transaction carries a permanent <span className="font-mono text-zinc-700 dark:text-zinc-300">⚡ Autopay</span> badge.
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 pl-6 leading-relaxed">
+              Automatically logs this expense on a recurring daily or monthly schedule.
             </p>
 
             {form.is_autopay && (

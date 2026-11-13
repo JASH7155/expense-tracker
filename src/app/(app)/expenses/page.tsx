@@ -39,7 +39,7 @@ export default function ExpensesPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-white">
             Expenses
@@ -48,17 +48,17 @@ export default function ExpensesPage() {
             {expenses.length} transaction{expenses.length === 1 ? '' : 's'} recorded · <span className="font-semibold text-zinc-900 dark:text-zinc-200 tabular-nums">{formatCurrency(totalShown)}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link
             href="/expenses/import"
-            className="inline-flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 px-3.5 py-2.5 rounded-xl font-semibold text-xs transition-all border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 px-3.5 py-2 rounded-xl font-semibold text-xs transition-all border border-zinc-200/60 dark:border-zinc-700/60 shadow-xs"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-blue-500" />
             <span>Import Statement</span>
           </Link>
           <Link
             href="/expenses/new"
-            className="inline-flex items-center justify-center gap-1.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-white px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-xs"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-white px-3.5 py-2 rounded-xl font-semibold text-xs transition-all shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Expense</span>
@@ -67,80 +67,92 @@ export default function ExpensesPage() {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+      <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+            Filter Ledger
+          </span>
+          {hasActiveFilters && (
+            <button
+              onClick={() => { setSearch(''); setCategoryFilter(''); setPaymentFilter(''); setStartDate(''); setEndDate(''); }}
+              className="inline-flex items-center gap-1 text-xs text-rose-600 dark:text-rose-400 font-medium hover:underline cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Reset Filters</span>
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Search */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Search expenses..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl pl-8 pr-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-colors"
-            />
+          <div className="space-y-1">
+            <label className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Search</label>
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="By note or merchant..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl pl-8 pr-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600"
+              />
+            </div>
           </div>
 
           {/* Category Filter */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-colors"
-          >
-            <option value="">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-            ))}
-          </select>
+          <div className="space-y-1">
+            <label className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Category</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600"
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+              ))}
+            </select>
+          </div>
 
           {/* Payment Method */}
-          <select
-            value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
-            className="bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 transition-colors"
-          >
-            <option value="">All Payment Methods</option>
-            {PAYMENT_METHODS.map((m) => (
-              <option key={m.value} value={m.value}>{m.icon} {m.label}</option>
-            ))}
-          </select>
+          <div className="space-y-1">
+            <label className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Payment Method</label>
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600"
+            >
+              <option value="">All Methods</option>
+              {PAYMENT_METHODS.map((m) => (
+                <option key={m.value} value={m.value}>{m.icon} {m.label}</option>
+              ))}
+            </select>
+          </div>
 
           {/* Start Date */}
-          <div className="relative">
+          <div className="space-y-1">
+            <label className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">From Date</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               onClick={(e) => { try { (e.currentTarget as any).showPicker?.() } catch {} }}
-              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 cursor-pointer"
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 cursor-pointer"
             />
           </div>
 
           {/* End Date */}
-          <div className="relative">
+          <div className="space-y-1">
+            <label className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400">To Date</label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               onClick={(e) => { try { (e.currentTarget as any).showPicker?.() } catch {} }}
-              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 cursor-pointer"
+              className="w-full bg-zinc-50 dark:bg-[#090a0f] border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-600 cursor-pointer"
             />
           </div>
         </div>
-
-        {/* Clear Filters Indicator */}
-        {hasActiveFilters && (
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
-            <span className="text-[11px] text-zinc-500 font-medium">Filtered results</span>
-            <button
-              onClick={() => { setSearch(''); setCategoryFilter(''); setPaymentFilter(''); setStartDate(''); setEndDate(''); }}
-              className="inline-flex items-center gap-1 text-[11px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium"
-            >
-              <X className="w-3 h-3" />
-              <span>Clear filters</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Expense Ledger Table */}

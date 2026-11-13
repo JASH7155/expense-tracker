@@ -30,19 +30,19 @@ function StatCard({
   icon: any
 }) {
   return (
-    <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-xs transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
-      <div className="flex items-start justify-between mb-3.5">
-        <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 flex items-center justify-center text-zinc-700 dark:text-zinc-300">
+    <div className="bg-white dark:bg-[#0e1017] border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-4 sm:p-5 shadow-xs transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
+      <div className="flex items-start justify-between mb-2.5 sm:mb-3.5">
+        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200/60 dark:border-zinc-700/60 flex items-center justify-center text-zinc-700 dark:text-zinc-300">
           <Icon className="w-4 h-4" />
         </div>
         {sub && (
-          <span className="text-[11px] px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700/60 font-medium">
+          <span className="text-[10px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-700/60 font-medium truncate max-w-[95px] sm:max-w-none">
             {sub}
           </span>
         )}
       </div>
-      <p className="text-zinc-500 dark:text-zinc-400 text-xs font-medium mb-1 tracking-wide uppercase">{title}</p>
-      <p className="text-zinc-950 dark:text-zinc-50 text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+      <p className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1 tracking-wide uppercase truncate">{title}</p>
+      <p className="text-zinc-950 dark:text-zinc-50 text-lg sm:text-2xl font-bold tracking-tight tabular-nums truncate">{value}</p>
     </div>
   )
 }
